@@ -1,2 +1,1 @@
-# OpenHaus
-SmartHome system.
+# OpenHaus-Server
