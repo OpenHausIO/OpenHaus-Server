@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "target": "es2016",
+        /*"lib": [
+            "es6",
+            "es7",
+            "esnext"
+        ],*/
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "importHelpers": true,
+        "noImplicitAny": true,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "esModuleInterop": false,
+        "alwaysStrict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": false,
+        //"resolveJsonModule": true,
+        //"outFile": "./dist/index.js",
+        "outDir": "./dist",
+        "sourceMap": false
+    },
+    "include": [
+        "./src/**/[!!]*",
+        "./src/**/*"
+        //"./package.json"
+    ],
+    "exclude": [
+        "./node_modules",
+        "**/*.spec.ts"
+    ]
+}
