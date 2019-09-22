@@ -110,6 +110,9 @@ const interfaceSchema = new mongoose.Schema({
         required: true,
         enum: Object.keys(ENUM_SETTINGS)
     },
+    description: {
+        type: String
+    },
     adapter: {
         type: ObjectId,
         ref: "Adapters",
