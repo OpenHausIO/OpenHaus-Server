@@ -32,7 +32,6 @@ module.exports = (logger: Winston.Logger, app: any) => {
 
 
     // create sub router for each model/schema
-    const routerUsers = Express.Router();
     const routerDevices = Express.Router();
     const routerRooms = Express.Router();
     const routerEndpoints = Express.Router();
@@ -41,7 +40,6 @@ module.exports = (logger: Winston.Logger, app: any) => {
 
 
     // create rest route for each model/schema
-    restHandler(model("Users"), routerUsers);
     restHandler(model("Devices"), routerDevices);
     restHandler(model("Rooms"), routerRooms);
     restHandler(model("Endpoints"), routerEndpoints);
@@ -50,7 +48,6 @@ module.exports = (logger: Winston.Logger, app: any) => {
 
 
     // mount 
-    router.use("/users", routerUsers);
     router.use("/devices", routerDevices);
     router.use("/rooms", routerRooms);
     router.use("/endpoints", routerEndpoints);

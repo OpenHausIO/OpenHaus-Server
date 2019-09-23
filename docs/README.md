@@ -49,7 +49,7 @@ All requests must have set the "Content-Type" header to `application/json`
 ### Example
 
 #### Fetch a resource
-`GET <host>/api/<model>`
+`GET <host>/api/<model>`\
 `GET https://cloud.open-haus.io/api/adapters/507f191e810c19729de860ea` 
 
 #### Response
@@ -89,16 +89,17 @@ All requests must have set the "Content-Type" header to `application/json`
 }
 ```
 
-The example above creates two interfaces:\
-- FX selection API\
+The example above creates two interfaces:
+- FX selection API
 - RAW SPI Buffer
 
 Both are IP/ETHERNET, but they have diffrent purposes.\
 One is to select a Effect for the attached LED strip.\
-The other is to write direct to the LED strip.
+The other one is to write directly to the LED strip.
 
-Both interfaces can be reached directle over a WebSocket conenction without a adapter intercept our communication.\
+Both interfaces can be reached direct over a WebSocket conenction without a adapter intercept our communication.\
 Assumed the device is added successful (no validation error occoured) and has the ObectId `517f195e810c19729de760fa`,\
-we are able to connect via vanilla WebSocket directly to the interface:\
+we are able to connect via vanilla WebSocket to the interface:
 
-`<host>/api/device/517f195e810c19729de760fa/interfaces/<iface id>`
+`<host>/api/devices/517f195e810c19729de760fa/interfaces/<iface id>`
+(Each interface gets it own unique id)

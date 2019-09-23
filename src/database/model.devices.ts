@@ -1,5 +1,6 @@
 import * as mongoose from "mongoose";
 import { ObjectId } from 'bson';
+import * as Joi from "joi";
 
 
 // https://medium.com/@tomanagle/strongly-typed-models-with-mongoose-and-typescript-7bc2f7197722
@@ -17,6 +18,7 @@ enum InterfaceTypes {
 export interface IInterfaces {
     _id: ObjectId,
     type: InterfaceTypes,
+    description: String,
     adapter: ObjectId,
     settings: Object
 }
@@ -37,71 +39,24 @@ export interface IDevices {
 }
 
 
-
-/**
- * enum_settings = schema
- * - add schema over schema.add(settings, ....)?!
- * - monkey patching ?!
- */
-
 const ENUM_SETTINGS = {
-    "RS232": {
-        baudRate: {
-            type: Number,
-            required: true
-        },
-        dataBits: {
-            type: Number,
-            default: 8
-        },
-        stopBits: {
-            type: Number,
-            default: 1
-        },
-        parity: {
-            type: String,
-            enum: ['none', 'even', 'mark', 'odd', 'space'],
-            default: "none"
-        },
-        rtscts: {
-            type: Boolean,
-            default: false
-        },
-        xon: {
-            type: Boolean,
-            default: false
-        },
-        xoff: {
-            type: Boolean,
-            default: false
-        },
-        xany: {
-            type: Boolean,
-            default: false
-        }
-    },
-    "ETHERNET": {
-        host: {
-            type: String,
-            required: true
-        },
-        port: {
-            type: Number,
-            required: true
-        },
-        path: {
-            type: String,
-            default: "/"
-        },
-        protocol: {
-            type: String,
-            required: true,
-            enum: ["ws", "http", "tcp", "udp"]
-        }
-    }
+    "RS232": Joi.object({
+        baudRate: Joi.number().required(),
+        dataBits: Joi.number().default(8),
+        stopBits: Joi.number().default(1),
+        parity: Joi.string().valid(["none", "even", "mark", "odd", "space"]).default("none"),
+        rtscts: Joi.boolean().default(false),
+        xon: Joi.boolean().default(false),
+        xoff: Joi.boolean().default(false),
+        xany: Joi.boolean().default(false)
+    }),
+    "ETHERNET": Joi.object({
+        host: Joi.string().required(),
+        port: Joi.number().required(),
+        path: Joi.string().default("/"),
+        protocol: Joi.string().required().valid(["ws", "http", "tcp", "udp"])
+    })
 };
-
-
 
 
 const interfaceSchema = new mongoose.Schema({
@@ -117,15 +72,39 @@ const interfaceSchema = new mongoose.Schema({
         type: ObjectId,
         ref: "Adapters",
         //required: true
+        // NOTE:
+        // if no adapter set, use vanilla EventEmitter: 
+        // created for adapter -> refactor ?
     },
-    //TODO Try this shit at home
-    // settings: ENUM_SETTINGS[this.type]
     settings: {
         type: Object,
-        required: true
+        required: true,
+        validate: {
+            validator: function (v: Object) {
+
+                if (!this.type || !v) {
+                    return false;
+                }
+
+                try {
+
+                    // get joi validator
+                    //@ts-ignore
+                    const result = ENUM_SETTINGS[this.type].validate(v);
+
+                    result.then(() => {
+                        this.settings = result.value;
+                    });
+
+                    return result;
+
+                } catch (e) {
+                    return false;
+                }
+
+            }
+        }
     }
-}, {
-    strict: false
 });
 
 
@@ -163,60 +142,15 @@ const schema = new mongoose.Schema({
     }
 });
 
-
-
 schema.pre("validate", function (next) {
+
     //@ts-ignore
-    if (this.interfaces && this.interfaces.length > 0) {
-
-        //@ts-ignore
-        this.interfaces = this.interfaces.map(e => {
-
-            if (ENUM_SETTINGS.hasOwnProperty(e.type)) {
-
-                //@ts-ignore
-                const settings = ENUM_SETTINGS[e.type];
-
-                for (let key in settings) {
-
-                    // validate required 
-                    if (settings[key].required) {
-                        if (!e.settings[key]) {
-                            next(new Error(`Path 'settings.${key}' is required!`));
-                        }
-                        if (typeof (e.settings[key]) != settings[key].type.name.toLowerCase()) {
-                            next(new Error(`Path 'settings.${key}' invalide type!`));
-                        }
-                    }
-
-                    // validate enum
-                    if (settings[key].type === String && settings[key].enum) {
-                        if (settings[key].enum.indexOf(e.settings[key]) === -1) {
-                            next(new Error(`Path settings.${key} '${e.settings[key]}' not valid use: [${settings[key].enum}]`));
-                        }
-                    }
-
-                    // set default value
-                    if (settings[key].default) {
-                        e.settings[key] = settings[key].default;
-                    }
-
-                }
-
-            }
-
-            return e;
-
-        });
-
-        next();
-
-
-    } else {
-
-        return next(new Error("INTERFACES_NOT_SET"));
-
+    if (!this.interfaces || this.interfaces.length <= 0) {
+        return next(new Error("INTERFACE_INVALID"));
     }
+
+    next();
+
 });
 
 

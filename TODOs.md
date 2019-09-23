@@ -25,10 +25,10 @@ req.states = needed?!
    - Plugins
    - Interfaces/Connector?
 2) refactor levels/index.ts
+   - myCustomLevels
 
 
 ### DATABASE
-1) Dynmic interface settings (actuall not so sexy)
 2) Typescript für settings/commands etc...
 
 

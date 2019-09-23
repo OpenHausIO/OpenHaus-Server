@@ -1,6 +1,15 @@
 import * as mongoose from "mongoose";
 
 
+export interface Adapters {
+    name: String,
+    descprition: String,
+    version: Number,
+    author: String,
+    folder: String
+}
+
+
 // create schema
 const schema = new mongoose.Schema({
     name: {
@@ -25,6 +34,7 @@ const schema = new mongoose.Schema({
         unique: true
     }
 });
+
 
 // register model
 mongoose.model("Adapters", schema);

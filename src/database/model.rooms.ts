@@ -1,4 +1,14 @@
 import * as mongoose from "mongoose";
+import { ObjectId } from 'bson';
+
+
+export interface IRooms {
+    _id: ObjectId,
+    name: String,
+    icon: String,
+    floor: Number,
+    number: Number
+}
 
 
 // create schema
@@ -16,6 +26,7 @@ const schema = new mongoose.Schema({
         //required: true
     }
 });
+
 
 // register model
 mongoose.model("Rooms", schema);
