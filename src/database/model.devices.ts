@@ -118,6 +118,8 @@ const interfaceSchema = new mongoose.Schema({
         ref: "Adapters",
         //required: true
     },
+    //TODO Try this shit at home
+    // settings: ENUM_SETTINGS[this.type]
     settings: {
         type: Object,
         required: true

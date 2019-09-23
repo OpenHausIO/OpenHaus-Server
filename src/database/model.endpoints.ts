@@ -5,6 +5,7 @@ import { ObjectId } from 'bson';
 export interface ICommand {
     _id: ObjectId,
     name: String,
+    payload: any,
     params: Object
 }
 
@@ -19,6 +20,22 @@ export interface IEndpoints {
 }
 
 
+const paramsSchema = new mongoose.Schema({
+    key: {
+        type: String,
+        required: true
+    },
+    value: {
+        //TODO Try this shit at home
+        // settings: ENUM_SETTINGS[this.type]
+        type: mongoose.Schema.Types.Mixed, //Range
+        // min: 0,
+        // max: 100
+        required: true
+    }
+});
+
+
 const commandSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -28,7 +45,11 @@ const commandSchema = new mongoose.Schema({
         type: ObjectId,
         required: true
     },
-    raw: mongoose.Schema.Types.Mixed
+    payload: mongoose.Schema.Types.Mixed,
+    params: {
+        type: [paramsSchema],
+        default: []
+    }
 });
 
 
