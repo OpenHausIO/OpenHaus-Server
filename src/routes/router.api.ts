@@ -1,14 +1,13 @@
 import * as Express from "express";
-import * as Winston from "winston";
 import { json } from "body-parser";
 import { model } from "mongoose";
 
-const restHandler = require("./rest-handler.js");
+const logger = require("../logger/index.js");
+const handler = require("./rest-handler.js");
+const restHandler = handler(logger.create("rest-handler"))
 
-module.exports = (logger: Winston.Logger, app: any) => {
 
-    //feedback
-    logger.debug("[api-handler] Create RESTful API");
+module.exports = (app: Express.Router) => {
 
 
     // create api router
@@ -56,8 +55,9 @@ module.exports = (logger: Winston.Logger, app: any) => {
 
 
     // extend rest routes
-    require("./api.endpoints.js")(routerEndpoints);
-    require("./api.interfaces.js")(routerDevices);
-    require("./api.scenes.js")(routerScenes);
+    require("./api.endpoints.js")(logger.create("endpoints"), routerEndpoints);     // <host>/api/endpoints
+    require("./api.interfaces.js")(logger.create("interfaces"), routerDevices);     // <host>/api/devices/<id>/interfaces
+    require("./api.connector.js")(logger.create("connector"), routerDevices);       // <host>/api/devices/<id>/connector
+    require("./api.scenes.js")(logger.create("scenes"), routerScenes);              // <host>/api/scenes
 
 };

@@ -1,11 +1,12 @@
 import * as Express from "express";
 import * as WebSocket from "ws";
-import { EventEmitter } from 'events';
-//const debug = require("debug")("OpenHaus:Server.api.interfaces");
+import { EventEmitter } from "events";
+import * as Winston from "winston";
 
 import { IDevices } from "../database/model.devices";
 
-export interface IHandele {
+
+export interface IAdapter {
     input: EventEmitter,
     output: EventEmitter,
     iface: EventEmitter,
@@ -13,38 +14,17 @@ export interface IHandele {
 }
 
 
-
 export interface IRequest extends Express.Request {
     doc: IDevices, //Document
-    adapter: IHandele,
-    interface: any
-    states: {
-        interfaces: Map<String, WebSocket.Server>,
-        connector: Map<String, WebSocket.Server>,
-        adapter: Map<String, IHandele>
-    }
+    adapter?: IAdapter,
+    interface?: Object
 }
 
 
-
-// NOTE
-// https://areknawo.com/node-js-file-streams-explained/
-
-//TODO 
-// - implement user/connection validation with JWT
-// - add logger to all kind of things
-
-
-
-const mwAdapter = require("./middleware/adapter.js")();
-//const mwWebSocket = require("./middleware/adapter.js")();
-
-
-
-
 const logger = require("../logger/index.js");
-const log = logger.create("interfaces");
+const adapter = require("./middleware/adapter.js");
 
+const mwAdapter = adapter(logger.create("adapter"));
 
 
 
@@ -62,27 +42,14 @@ function isWebSocketRequest(req: IRequest) {
 }
 
 
-const { interfaces, connector, adapter } = require("./states.js");
+const { interfaces } = require("./states.js");
 
 
-module.exports = (router: Express.Router) => {
 
-
-    router.use((
-        req: IRequest,
-        res,
-        next
-    ) => {
-
-        req.states = {
-            interfaces,
-            connector,
-            adapter
-        };
-
-        next();
-
-    });
+module.exports = (
+    log: Winston.Logger,
+    router: Express.Router
+) => {
 
 
     router.param("iface", (
@@ -106,80 +73,18 @@ module.exports = (router: Express.Router) => {
 
 
 
-    router.get("/:_id/connector", (
-        req: IRequest,
-        res
-    ) => {
-
-        // WHAT DO WE HERE?:
-        // - send interfaces to connector
-        // - broadcast states between connector/adapter
-        // - handle/broadcast interfaces states (end,streams, etc...)
-        //TODO Connector <> Adapter events
-
-        if (!connector.has(req.doc._id)) {
-
-            const wss = new WebSocket.Server({
-                noServer: true
-            });
-
-            connector.set(req.doc._id, wss);
-
-        }
-
-
-        // get websocket server for interface
-        const wss = connector.get(req.doc._id);
-
-
-        if (!isWebSocketRequest(req)) {
-            return res.status(405).end("MUST_BE_A_WS_CONNECTION");
-        }
-
-        // hanlde websocket upgrade
-        wss.handleUpgrade(req, req.socket, req.headers, (ws: WebSocket) => {
-
-            ws.on("close", () => {
-                log.warn("Connector: disconnected, %s", req.params._id);
-            });
-
-
-
-            setImmediate(() => {
-
-                // feedback
-                log.info("Connector: connected, %s", req.params._id);
-
-                // emit connection event
-                wss.emit("connection", ws, req);
-                //TODO, take a look on TODOs.md
-                //req.states.device.emit("connected"); -> NEEDED?!
-
-                // format message
-                const message = JSON.stringify({
-                    event: ":interfaces",
-                    data: req.doc.interfaces
-                });
-
-                // send interfaces to connector
-                ws.send(message);
-
-            });
-
-
-        });
-
-    });
-
-
-
     router.get("/:_id/interfaces", (req: IRequest, res) => {
         res.json(req.doc.interfaces);
     });
 
 
+
+
+
     router.get("/:_id/interfaces/:iface", mwAdapter, (req: IRequest, res) => {
         if (isWebSocketRequest(req)) {
+
+            // req.adapter = adapter handler instance
 
 
             // create server
@@ -203,12 +108,10 @@ module.exports = (router: Express.Router) => {
             // this is the raw communication with the device interface
             wss.handleUpgrade(req, req.socket, req.headers, (ws: WebSocket) => {
 
-                // NOTE req.adapter.iface.emit add <ws> as parameter?
-
 
                 ws.on("close", () => {
-                    log.warn("Interface: disconnected, %s", req.params.iface);
-                    req.adapter.iface.emit(":disconnected", ws);
+                    log.warn("Disconnected, %s", req.params.iface);
+                    req.adapter.iface.emit("disconnected", ws);
                 });
 
 
@@ -216,6 +119,7 @@ module.exports = (router: Express.Router) => {
                 //NOTE HIER SOLLTE KEINE LOOP ENTSTEHEN, DENNOCH NICHT BEST PRACTICE!!!!
                 // adapter -> connector -> device (interface)
                 req.adapter.output.on("data", (data) => {
+                    log.debug("Message to interface (%s)", req.params.iface, data);
                     ws.send(data);
                 });
 
@@ -223,6 +127,7 @@ module.exports = (router: Express.Router) => {
                 // data from interface
                 // device (interface) -> connector -> adapter
                 ws.on("message", (data) => {
+                    log.debug("Message from interface (%s)", req.params.iface, data);
                     req.adapter.input.emit("data", data);
                 });
 
@@ -230,11 +135,11 @@ module.exports = (router: Express.Router) => {
                 setImmediate(() => {
 
                     // feedback
-                    log.info("Interface: connected, %s", req.params.iface);
+                    log.info("Connected (%s)", req.params.iface);
 
                     // emit connection event
                     wss.emit("connection", ws, req);
-                    req.adapter.iface.emit(":connected", ws);
+                    req.adapter.iface.emit("connected", ws);
 
                 });
 
@@ -249,27 +154,6 @@ module.exports = (router: Express.Router) => {
             res.json(req.interface);
 
         }
-    });
-
-
-    router.get("/:_id/interfaces/:iface/commands", (req: IRequest, res) => {
-        res.json(req.interface.commands);
-    });
-
-
-    router.get("/:_id/interfaces/:iface/commands/:cmd", (req: IRequest, res) => {
-
-        //@ts-ignore
-        const command = req.interface.commands.find(e => {
-            return e._id == req.params.cmd;
-        });
-
-        if (!command) {
-            return res.status(404).end();
-        }
-
-        res.json(command);
-
     });
 
 };

@@ -6,13 +6,14 @@
    - middleware:
      - :<event> wrapper/handler/converter
 
-### api.interfaces.ts
-req.states = needed?! -> Adapter #2
-
+### /routes folder
+1) Aufteilung nicht zufriednstellen
+   - api.connector.ts keine eigener router -> /device/..../connector
+   - api.interface.ts keine eigener router -> /device/..../interface/....
 
 ### ADAPTER
 1) Dokumentieren
-2) states.js überarbeiten
+2) ~~states.js überarbeiten~~?
 
 
 ### PLUGINS
@@ -21,16 +22,17 @@ req.states = needed?! -> Adapter #2
 
 ### LOGGER
 1) Grupieren/Gruppen
-   - Adapter
-   - RESTful API
+   - ~~Adapter~~
+   - ~~RESTful API~~
    - Plugins
-   - Interfaces/Connector?
+   - ~~Interfaces/Connector?~~
 2) refactor levels/index.ts
    - myCustomLevels
 
 
 ### DATABASE
 2) Typescript für settings/commands etc...
+3) Array/Sub-Schema validation (Joi)
 
 
 ### AUTHENTIFIZIERUNG (low)

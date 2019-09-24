@@ -11,6 +11,5 @@ mongoose.connect("mongodb://127.0.0.1/OpenHaus", {
 require("./model.devices.js");
 require("./model.endpoints.js");
 require("./model.rooms.js");
-require("./model.users.js");
 require("./model.adapter.js");
 require("./model.scenes.js");

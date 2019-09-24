@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { model, Types } from 'mongoose';
 import { IRequest } from "../api.interfaces";
 import * as Express from "express";
+import * as Winston from "winston";
 
 function checkObjectIdValid(id: any): Boolean {
     if (Types.ObjectId.isValid(id)) {
@@ -17,12 +18,16 @@ function checkObjectIdValid(id: any): Boolean {
 
 
 const logger = require("../../logger/index.js");
+const states = require("../states.js");
 
-//TODO need 2 logger:
-// 1. Middleware itself
-// 2. Adapter instance
 
-module.exports = () => {
+/**
+ * 
+ * ADAPTER INIT MIDDLEWARE
+ * 
+ */
+
+module.exports = (log: Winston.Logger) => {
     return (
         req: IRequest,
         res: Express.Response,
@@ -30,14 +35,13 @@ module.exports = () => {
     ) => {
 
         // feedback
-        logger.verbose("[adapter-bootstrap] Adapter middleware called");
+        log.verbose("Middleware called");
 
-        const { adapter } = req.states;
 
-        if (!adapter.has(req.params.iface)) {
+        if (!states.adapter.has(req.params.iface)) {
 
             // feebdack
-            logger.debug("[adapter-bootstrap] create adapter instance for interface: %s", req.params.iface);
+            log.debug("Create adapter instance for interface: %s", req.params.iface);
 
             //FIXME use req.interface ?
             const iface = req.doc.interfaces.find(e => {
@@ -65,12 +69,12 @@ module.exports = () => {
                     try {
 
                         //feedback
-                        logger.debug("Init adapter: %s", doc.folder);
+                        log.debug("Init adapter: %s", doc.folder);
 
                         // create logger & init adapter
                         // singleton adapter instance for multiple interface
-                        const log = logger.create(doc.folder);
-                        const instance = require(`../../adapter/${doc.folder}/index.js`)(log);
+                        const exported = require(`../../adapter/${doc.folder}/index.js`);
+                        const instance = exported(logger.create(`adapter/${doc.folder}`));
 
                         // set/save adapter instance
                         adapter.set(doc._id, instance);
@@ -80,12 +84,12 @@ module.exports = () => {
 
                         if (e.code === "ENOENT") {
 
-                            logger.error(e, "[adapter-bootstrap] ADAPTER NOT FOUND for interface", req.params.iface);
+                            log.warn(e, "Adapter '%s' not found, interface: %s", doc.folder, req.params.iface);
                             res.status(500).end(e.message);
 
                         } else {
 
-                            logger.error(e, "[adapter-bootstrap] Error in adapter\n", e.message);
+                            log.error(e, "Error in adapter\n", e.message);
                             res.status(500).end(e.message);
 
                         }
@@ -120,16 +124,15 @@ module.exports = () => {
                     device: Object.assign(req.doc, emitterDevice)
                 };
 
-                //@ts-ignore
-                instance(input, output, iface, device, req.states);
+                instance(input, output, iface, device, states);
                 adapter.set(req.params.iface, req.adapter);
 
                 next();
 
             }).catch((e) => {
 
-                //NOTE needed?!
-                //logger.error(e);
+                // someday someone should look
+                logger.notice(e);
 
             });
 
@@ -137,7 +140,7 @@ module.exports = () => {
         } else {
 
             // feebdack
-            logger.verbose("[adapter-bootstrap] use existing adapter instance for interface: %s", req.params.iface);
+            log.verbose("Use existing adapter instance for interface: %s", req.params.iface);
 
             req.adapter = adapter.get(req.params.iface);
             next();

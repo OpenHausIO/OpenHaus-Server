@@ -1,9 +1,6 @@
-"use strict";
-
-// https://medium.com/@tomanagle/strongly-typed-models-with-mongoose-and-typescript-7bc2f7197722
-
 import { Request, Response, Router } from "express";
 import { Error, Model, Document, Schema } from "mongoose";
+import * as Winston from "winston";
 
 interface IPopulate {
     path: String,
@@ -17,204 +14,200 @@ interface IRequest extends Request {
 
 
 
-interface Options {
-    handleError: Boolean
-}
-
-module.exports = (
-    model: Model<Document, Schema>,
-    router: Router,
-    options: Options
-) => {
-
-
-    /**
-     * Create populate object for querys
-     */
-    router.use((
-        req: IRequest,
-        res: Response,
-        next: Function
+module.exports = (log: Winston.Logger) => {
+    return (
+        model: Model<Document, Schema>,
+        router: Router
     ) => {
 
-        if (req.query && req.query.populate) {
-            req.populate = req.query.populate.split(",").reduce((r: Array<IPopulate>, s: String) => {
-                s.split('.').reduce((a: IPopulate[], path: String) => {
 
-                    let object = a.find(o => o.path === path);
-
-                    if (!object) {
-                        a.push(object = { path, populate: [] });
-                    }
-
-                    return object.populate;
-
-                }, r);
-                return r;
-            }, []);
-        }
-
-        next();
-
-    });
-
-
-    /**
-     * Fetch doc from database
-     */
-    router.param('_id', (
-        req: IRequest,
-        res: Response,
-        next: Function,
-        _id: String
-    ) => {
-
-        //@TODO findonebyid
-        const query = model.findOne({
-            _id
-        });
-
-        //console.log("lakjdsfasdf")
-        query.populate(req.populate);
-
-        // execute query
-        query.exec((
-            err: Error,
-            doc: Document
+        /**
+         * Create populate object for querys
+         */
+        router.use((
+            req: IRequest,
+            res: Response,
+            next: Function
         ) => {
 
-            if (err) {
-                console.log(err)
-                res.status(400).end();
-                return;
+            if (req.query && req.query.populate) {
+                req.populate = req.query.populate.split(",").reduce((r: Array<IPopulate>, s: String) => {
+                    s.split('.').reduce((a: IPopulate[], path: String) => {
+
+                        let object = a.find(o => o.path === path);
+
+                        if (!object) {
+                            a.push(object = { path, populate: [] });
+                        }
+
+                        return object.populate;
+
+                    }, r);
+                    return r;
+                }, []);
             }
 
-            if (!doc) {
-                res.status(404).end();
-                return;
-            }
-
-            req.doc = doc;
             next();
 
         });
 
-    });
 
+        /**
+         * Fetch doc from database
+         */
+        router.param('_id', (
+            req: IRequest,
+            res: Response,
+            next: Function,
+            _id: String
+        ) => {
 
-    router.search("/", (
-        req: IRequest,
-        res
-    ) => {
+            //TODO findonebyid
+            const query = model.findOne({
+                _id
+            });
 
-        const query = model.find(req.body);
-        query.populate(req.populate);
+            //console.log("lakjdsfasdf")
+            query.populate(req.populate);
 
-        query.exec((err, docs) => {
+            // execute query
+            query.exec((
+                err: Error,
+                doc: Document
+            ) => {
 
-            if (err) {
-                console.log(err);
-                return res.status(500).end();
-            }
+                if (err) {
+                    console.log(err)
+                    res.status(400).end();
+                    return;
+                }
 
-            if (docs.length === 0) {
-                return res.status(404).end();
-            }
+                if (!doc) {
+                    res.status(404).end();
+                    return;
+                }
 
-            res.json(docs);
+                req.doc = doc;
+                next();
 
-        });
-
-    });
-
-
-    //@TODO add query range/size?!
-    router.get("/:_id?", (
-        req: IRequest,
-        res
-    ) => {
-
-        if (req.params._id && req.doc) {
-            return res.json(req.doc);
-        }
-
-        // query & populate docs
-        const query = model.find({});
-        query.populate(req.populate);
-
-        // execute query
-        query.exec((err: Error, docs: Array<Document>) => {
-
-            if (err) {
-                console.log(err);
-                res.status(500).end();
-                return;
-            }
-
-            res.json(docs);
+            });
 
         });
 
-    });
 
+        router.search("/", (
+            req: IRequest,
+            res
+        ) => {
 
-    router.put("/", (
-        req: IRequest,
-        res: Response
-    ) => {
+            const query = model.find(req.body);
+            query.populate(req.populate);
 
-        (new model(req.body)).save((err, data) => {
+            query.exec((err, docs) => {
 
-            if (err) {
-                console.log(err);
-                return res.status(400).end();
-            }
+                if (err) {
+                    log.error(err);
+                    return res.status(500).end();
+                }
 
-            res.json(data);
+                if (docs.length === 0) {
+                    return res.status(404).end();
+                }
 
-        });
+                res.json(docs);
 
-    });
-
-
-    router.post("/:_id", (
-        req: IRequest,
-        res: Response
-    ) => {
-
-        req.doc.updateOne({
-            $set: req.body
-        }, (err, result) => {
-
-            if (err) {
-                console.log(err);
-                return res.status(500).end();
-            }
-
-            res.json(result);
+            });
 
         });
 
-    });
 
+        //@TODO add query range/size?!
+        router.get("/:_id?", (
+            req: IRequest,
+            res
+        ) => {
 
-    router.delete("/:_id", (
-        req: IRequest,
-        res: Response
-    ) => {
-
-        req.doc.remove((err, result) => {
-
-            if (err) {
-                console.log(err);
-                return res.status(500);
+            if (req.params._id && req.doc) {
+                return res.json(req.doc);
             }
 
-            res.json(result);
+            // query & populate docs
+            const query = model.find({});
+            query.populate(req.populate);
+
+            // execute query
+            query.exec((err: Error, docs: Array<Document>) => {
+
+                if (err) {
+                    log.error(err);
+                    res.status(500).end();
+                    return;
+                }
+
+                res.json(docs);
+
+            });
 
         });
 
-    });
+
+        router.put("/", (
+            req: IRequest,
+            res: Response
+        ) => {
+
+            (new model(req.body)).save((err, data) => {
+
+                if (err) {
+                    log.error(err);
+                    return res.status(400).end();
+                }
+
+                res.json(data);
+
+            });
+
+        });
 
 
+        router.post("/:_id", (
+            req: IRequest,
+            res: Response
+        ) => {
+
+            req.doc.updateOne({
+                $set: req.body
+            }, (err, result) => {
+
+                if (err) {
+                    log.error(err);
+                    return res.status(500).end();
+                }
+
+                res.json(result);
+
+            });
+
+        });
+
+
+        router.delete("/:_id", (
+            req: IRequest,
+            res: Response
+        ) => {
+
+            req.doc.remove((err, result) => {
+
+                if (err) {
+                    log.error(err);
+                    return res.status(500);
+                }
+
+                res.json(result);
+
+            });
+
+        });
+
+    };
 };

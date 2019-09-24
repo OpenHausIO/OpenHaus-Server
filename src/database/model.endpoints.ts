@@ -6,7 +6,8 @@ export interface ICommand {
     _id: ObjectId,
     name: String,
     payload: any,
-    params: Object
+    params: Object,
+    interface: ObjectId
 }
 
 
@@ -15,7 +16,6 @@ export interface IEndpoints {
     name: String,
     icon: String,
     commands: Array<ICommand>
-    interface: ObjectId,
     room: ObjectId,
 }
 

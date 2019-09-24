@@ -1,9 +1,6 @@
 import * as Express from "express";
 import { IDocument } from "../database/model.scenes";
-
-//@ts-ignore
-const { adapter } = require("./states.js");
-
+import * as Winston from "winston";
 
 
 interface IRequest extends Express.Request {
@@ -15,7 +12,10 @@ interface IRequest extends Express.Request {
 //const fetch = require("../system/scenes/bank.js");
 const run = require("../system/scenes/stack-execute.js");
 
-module.exports = (router: Express.Router) => {
+module.exports = (
+    log: Winston.Logger,
+    router: Express.Router
+) => {
 
     router.post("/:_id/run", (req: IRequest, res) => {
 
@@ -43,27 +43,17 @@ module.exports = (router: Express.Router) => {
             }
         }];
 
-        res.status(206);
-        res.write("OK," + Date.now() + "\n");
-
-        const interval = setInterval(() => {
-            res.write("OK," + Date.now() + "\n");
-        }, 300);
 
         run(stack).then(() => {
 
-            console.log("Scene done");
-            clearInterval(interval);
-
-            res.end();
+            log.info("Scene '%s' done", "<example>");
+            res.status(200).end();
 
             //@ts-ignore
         }).catch(e => {
 
-            console.log("Scenen error", e);
-            clearInterval(interval);
-
-            res.end();
+            log.warn("Scenen error", e);
+            res.status(500).end();
 
         });
 
