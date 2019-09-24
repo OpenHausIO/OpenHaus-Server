@@ -18,6 +18,9 @@ function checkObjectIdValid(id: any): Boolean {
 
 const logger = require("../../logger/index.js");
 
+//TODO need 2 logger:
+// 1. Middleware itself
+// 2. Adapter instance
 
 module.exports = () => {
     return (

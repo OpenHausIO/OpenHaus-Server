@@ -7,11 +7,12 @@
      - :<event> wrapper/handler/converter
 
 ### api.interfaces.ts
-req.states = needed?!
+req.states = needed?! -> Adapter #2
 
 
 ### ADAPTER
 1) Dokumentieren
+2) states.js überarbeiten
 
 
 ### PLUGINS
