@@ -19,6 +19,8 @@ A Connector is responsible for the communication between a adapter and a interfa
 Its like a proxy for two parties, it must allways run on the local network.\
 The data forwarding to the backend/api is realized over websockets.
 
+[Read more](./Connector.md)
+
 ### 4) Endpoints
 A Endpoint is a controllable thing. This "thing" exists may be not physical.\
 The Endpoint is connected with/over a interface/connector to a adapter.\
