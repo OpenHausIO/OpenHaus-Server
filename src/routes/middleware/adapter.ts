@@ -1,6 +1,6 @@
-import { EventEmitter } from 'events';
-import { model, Types } from 'mongoose';
-import { IRequest } from "../api.interfaces";
+import { EventEmitter } from "events";
+import { model, Types } from "mongoose";
+import { IRequest } from "../device.interfaces";
 import * as Express from "express";
 import * as Winston from "winston";
 

@@ -56,8 +56,8 @@ module.exports = (app: Express.Router) => {
 
     // extend rest routes
     require("./api.endpoints.js")(logger.create("endpoints"), routerEndpoints);     // <host>/api/endpoints
-    require("./api.interfaces.js")(logger.create("interfaces"), routerDevices);     // <host>/api/devices/<id>/interfaces
-    require("./api.connector.js")(logger.create("connector"), routerDevices);       // <host>/api/devices/<id>/connector
+    require("./device.interfaces.js")(logger.create("interfaces"), routerDevices);     // <host>/api/devices/<id>/interfaces
+    require("./device.connector.js")(logger.create("connector"), routerDevices);       // <host>/api/devices/<id>/connector
     require("./api.scenes.js")(logger.create("scenes"), routerScenes);              // <host>/api/scenes
 
 };

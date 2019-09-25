@@ -9,7 +9,9 @@
     "build": "tsc",
     "watch:build": "tsc --watch",
     "watch:server": "nodemon ./dist/index.js --watch ./dist",
-    "start": "npm-run-all clean build --parallel watch:build watch:server --print-label"
+    "start": "npm-run-all clean build --parallel watch:build watch:server --print-label",
+    "import": "mongorestore --host localhost:27017 --gzip --archive=./docs/assets/database.gz --db OpenHaus",
+    "export": "mongodump --host localhost:27017 --archive=./docs/assets/database.gz --gzip --db OpenHaus"
   },
   "author": "Marc Stirner <marc.stirner@open-haus.io>",
   "license": "MIT",

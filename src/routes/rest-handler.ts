@@ -158,6 +158,8 @@ module.exports = (log: Winston.Logger) => {
 
             (new model(req.body)).save((err, data) => {
 
+                console.log(err)
+
                 if (err) {
                     log.error(err);
                     return res.status(400).end();

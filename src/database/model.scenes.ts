@@ -1,6 +1,5 @@
 import * as mongoose from "mongoose";
-import { ObjectID } from 'bson';
-//@ts-ignore
+import { ObjectID } from "bson";
 const ObjectId = mongoose.Schema.Types.ObjectId;
 
 export interface IStack {

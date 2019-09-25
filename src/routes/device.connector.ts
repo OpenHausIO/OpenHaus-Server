@@ -4,7 +4,7 @@ import * as Winston from "winston";
 
 const { connector } = require("./states.js");
 
-import { IRequest } from "./api.interfaces";
+import { IRequest } from "./device.interfaces";
 
 
 

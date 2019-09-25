@@ -17,6 +17,10 @@ const schema = new mongoose.Schema({
         type: String,
         required: true
     },
+    icon: {
+        type: String,
+        required: true
+    },
     floor: {
         type: Number,
         required: true
