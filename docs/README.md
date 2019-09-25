@@ -1,5 +1,6 @@
 # Documentation
-For Developer.
+**For Developer.**\
+Example Database dump can be found [here](./assets/database.zip).
 
 ## Architecture
 1) Overview
@@ -27,9 +28,7 @@ The Endpoint is connected with/over a interface/connector to a adapter.\
 
 
 ## REST API
-
-### Postman Collection
-@TODO
+[Documentation](./rest-api.md)
 
 ### Global
 
@@ -41,9 +40,9 @@ OpenHaus use various models/schemas:
 - scenes
 
 ### HTTP methods
-`GET` Fetch a resource (list)
-`POST` Update a resource
-`PUT` Create new resource
+`GET` Fetch a resource (list)\
+`POST` Update a resource\
+`PUT` Create new resource\
 `DELETE` Remove a resource
 
 All requests must have set the "Content-Type" header to `application/json`
@@ -51,8 +50,8 @@ All requests must have set the "Content-Type" header to `application/json`
 ### Example
 
 #### Fetch a resource
-`GET <host>/api/<model>`\
-`GET https://cloud.open-haus.io/api/adapters/507f191e810c19729de860ea` 
+> `GET` /api/\<model>\
+> `GET` https://cloud.open-haus.io/api/adapters/507f191e810c19729de860ea
 
 #### Response
 ```json

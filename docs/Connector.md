@@ -35,21 +35,21 @@ module.exports = (log) => {
   - `adapter` {Map}
 
 
----
+
 ## **Input** {EventEmitter}
 ### Event: `data`
 - `data` RAW data from the device
 - `ws` WebSocket instance
 
 
----
+
 ## **Output** {EventEmitter}
 ### Event: `data`
 >Triggerd from adapter/plugin or any other part that want so send data to the interface
 - `data` RAW data to the device
 
 
----
+
 ## **Iface** {EventEmitter}
 ### Event: `command`
 >Emited when a command received via API\
@@ -75,7 +75,7 @@ module.exports = (log) => {
 If you need this kind of events, see adapter handler function `device` parameter events
 
 
----
+
 ## **Device** {EventEmitter}
 ### Event: `:connected`
 > Connection etablished to the target device interface\
@@ -87,7 +87,7 @@ If you need this kind of events, see adapter handler function `device` parameter
 > *For RS232 or similar connections this mean you are physical not connected (broken wire, wrong pin layout)*
 - `interface` {Object} Interface description
 
----
+
 ## **Connections** {object}
 > states.js object of Map's
 - `interfaces` {Map} WebSocket Server on `.../interfaces/<id>` resource
