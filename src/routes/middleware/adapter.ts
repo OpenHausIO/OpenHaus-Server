@@ -5,20 +5,28 @@ import * as Express from "express";
 import * as Winston from "winston";
 
 function checkObjectIdValid(id: any): Boolean {
-    if (Types.ObjectId.isValid(id)) {
-        if (new Types.ObjectId(id) == id) {
-            return true;
+    try {
+
+        if (Types.ObjectId.isValid(id)) {
+            if (new Types.ObjectId(id) == id) {
+                return true;
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
-    } else {
-        return false;
+
+    } catch (e) {
+        console.log("adsfasdf", e);
     }
 }
 
 
 const logger = require("../../logger/index.js");
 const states = require("../states.js");
+
+const { adapter } = states;
 
 
 /**
@@ -41,21 +49,27 @@ module.exports = (log: Winston.Logger) => {
         if (!states.adapter.has(req.params.iface)) {
 
             // feebdack
-            log.debug("Create adapter instance for interface: %s", req.params.iface);
+            //log.debug("Create adapter instance for interface: %s", req.params.iface);
 
             //FIXME use req.interface ?
             const iface = req.doc.interfaces.find(e => {
                 return e._id == req.params.iface;
             });
 
+            //NOTE could be possible if adapter is not required in db model
+            if (!iface.adapter) {
+                return log.error("Interface (%s) has no adapter set!", iface._id);
+            }
 
             const fetch = (async () => {
                 if (checkObjectIdValid(iface.adapter)) {
 
+                    log.verbose("Fetch adapter doc from database (%s)", iface.adapter);
                     return await model("Adapters").findById(iface.adapter).lean();
 
                 } else {
 
+                    log.verbose("Use poluated adapter doc", iface);
                     return iface.adapter;
 
                 }
@@ -64,12 +78,19 @@ module.exports = (log: Winston.Logger) => {
 
             fetch().then((doc) => {
 
+                if (!doc) {
+                    return log.notice("Document is empty!");
+                }
+
+                // feedback
+                log.verbose("Adapter doc: %j", doc);
+
                 // doc = adapter model
                 if (!adapter.has(doc._id)) {
                     try {
 
                         //feedback
-                        log.debug("Init adapter: %s", doc.folder);
+                        log.info("Init adapter: %s", doc.folder);
 
                         // create logger & init adapter
                         // singleton adapter instance for multiple interface
@@ -78,7 +99,7 @@ module.exports = (log: Winston.Logger) => {
 
                         // set/save adapter instance
                         adapter.set(doc._id, instance);
-                        return Promise.resolve(doc._id);
+                        return Promise.resolve(doc);
 
                     } catch (e) {
 
@@ -99,14 +120,17 @@ module.exports = (log: Winston.Logger) => {
                     }
                 } else {
 
-                    return Promise.resolve(doc._id);
+                    return Promise.resolve(doc);
 
                 }
 
-            }).then((id) => {
+            }).then((doc) => {
+
+                // feedback
+                log.debug("(%s) Create/init handler for interface: %s", doc.folder, doc._id);
 
                 // get adapter instance
-                const instance = adapter.get(id);
+                const instance = adapter.get(doc._id);
 
                 // create event emitter for adapter
                 const emitterInput = new EventEmitter();
@@ -132,7 +156,7 @@ module.exports = (log: Winston.Logger) => {
             }).catch((e) => {
 
                 // someday someone should look
-                logger.notice(e);
+                log.error(e, "Adapter Blabla...");
 
             });
 

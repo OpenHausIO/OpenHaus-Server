@@ -1,9 +1,63 @@
 
 // https://stackoverflow.com/questions/30853265/dynamic-chaining-in-javascript-promises
 
-
-const makros = require("./makros.js");
 const { adapter } = require("../../routes/states.js");
+
+//@ts-ignore
+const repeat = function (args, command) {
+    return function () {
+
+        const opts = Object.assign({
+            interval: 100,
+            rounds: 4
+        }, args);
+
+        let counter = 0;
+
+        return new Promise((resolve, reject) => {
+            const interval = setInterval(() => {
+
+                if (counter < opts.rounds) {
+
+                    // feedback
+                    console.log("Repeat Command %s", command.command)
+
+                }
+
+                // increment
+                counter++;
+
+                if (counter === opts.rounds) {
+                    clearInterval(interval);
+                    resolve();
+                }
+
+            }, opts.interval);
+        });
+
+    };
+};
+
+//@ts-ignore
+const sleep = function (args) {
+    return function () {
+
+        const opts = Object.assign({
+            ms: 1000,
+        }, args);
+
+        return new Promise((resolve, reject) => {
+            setTimeout(resolve, opts.ms);
+        });
+
+    }
+};
+
+
+const makros = {
+    sleep,
+    repeat
+};
 
 
 //@ts-ignore
@@ -17,6 +71,8 @@ module.exports = function (scene) {
     scene.forEach((action, index) => {
         if (action.makro && makros.hasOwnProperty(action.makro)) {
 
+            // add marko function to stack
+            //@ts-ignore
             stack.push(makros[action.makro](action.options, action.command));
 
         } else if (!action.makro) {
@@ -44,7 +100,8 @@ module.exports = function (scene) {
 
                     } else {
 
-                        console.log("IFACE_NOT_CONNECTED")
+                        console.log("IFACE_NOT_CONNECTED");
+                        reject(new Error("IFACE_NOT_CONNECTED"));
 
                     }
 
@@ -68,3 +125,5 @@ module.exports = function (scene) {
 
 
 };
+
+module.exports.makros = makros;

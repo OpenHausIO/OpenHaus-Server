@@ -13,6 +13,10 @@ export interface IDocument extends mongoose.MongooseDocument {
     banks: Array<IStack>
 }
 
+const bankSchema = [{
+    "command": ObjectId,
+    "makro": Object
+}];
 
 // create schema
 const schema = new mongoose.Schema({
@@ -20,13 +24,10 @@ const schema = new mongoose.Schema({
         type: String,
         required: true
     },
-    banks: [
-        [{
-            "command": ObjectId,
-            "params": Object,
-            "makro": Object
-        }]
-    ]
+    banks: {
+        type: [bankSchema],
+        default: []
+    }
 });
 
 

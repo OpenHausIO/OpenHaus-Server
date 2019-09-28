@@ -2,6 +2,7 @@ import * as mongoose from "mongoose";
 import { ObjectId } from 'bson';
 import * as Joi from "joi";
 
+//const log = require("../logger/index.js");
 
 // https://medium.com/@tomanagle/strongly-typed-models-with-mongoose-and-typescript-7bc2f7197722
 // https://stackoverflow.com/questions/28166463/how-to-create-mongoose-schema-dynamically
@@ -71,7 +72,7 @@ const interfaceSchema = new mongoose.Schema({
     adapter: {
         type: ObjectId,
         ref: "Adapters",
-        //required: true
+        required: true
         // NOTE:
         // if no adapter set, use vanilla EventEmitter: 
         // created for adapter -> refactor ?
@@ -99,6 +100,7 @@ const interfaceSchema = new mongoose.Schema({
                     return result;
 
                 } catch (e) {
+                    //log.warn(e, "Could not validate inteface settings!");
                     return false;
                 }
 

@@ -3,6 +3,7 @@ import { IEndpoints, ICommand } from "../database/model.endpoints";
 //import { ObjectId } from "bson";
 import * as Winston from "winston";
 import * as Joi from "joi";
+import { __values } from 'tslib';
 
 interface IRequest extends Express.Request {
     doc: IEndpoints,
@@ -29,6 +30,8 @@ module.exports = (
             return res.status(404).end("COMMAND_NOT_FOUND");
         }
 
+        next();
+
     });
 
 
@@ -38,7 +41,7 @@ module.exports = (
 
 
     router.get("/:_id/commands/:cmd", (req: IRequest, res) => {
-
+        res.json(req.command);
     });
 
 
@@ -47,51 +50,95 @@ module.exports = (
 
             // feedback
             log.debug("Command: %j, body/params: %j", req.command, req.body);
-
-
             const handler = adapter.get(req.command.interface.toString());
 
 
-            // validat command parmeter
-            const validate = Joi.object({
-                // command.params 
-            });
+            try {
+
+                // validation schema
+                let schema = {};
+
+                //@ts-ignore
+                req.command.params.forEach(param => {
+                    if (param.value.type) {
+
+                        // FIXME Chaining required?!?!?!??!?!
+                        // TODO Test without chaining!
+
+                        //@ts-ignore
+                        schema[param.key] = Joi[param.value.type]();
+                        delete param.value.type;
 
 
-            //@ts-ignore
-            validate.then((values) => {
+                        if (!param.value.default) {
+                            //@ts-ignore
+                            schema[param.key] = schema[param.key].required();
+                        }
 
 
-                // feedback
-                log.verbose("Command params validation passed");
-                log.debug("Send command to adapter handler interface eventemitter");
+                        Object.keys(param.value).forEach((k) => {
+                            //@ts-ignore
+                            schema[param.key] = schema[param.key][k](param.value[k]);
+                        });
 
 
-                // let adapter handler protol implementation
-                handler.iface.emit("command", req.command, values);
+                        //NOTE try with Array.reduce?!, if chainging required!
+                        /*
+                                Object.keys(param.value).reduce((acc, k) => {                        
+                                    return schema[param.key][k](param.value[k]);                        
+                                }, schema[param.key]);
+                        */
 
+                    } else {
 
-                // wait that adapter handler has done his job
-                handler.output.once("command", () => {
-                    log.debug("Adapter handler sendet command");
-                    res.end();
+                        // stop foreach loop
+                        throw new Error("INVALID_PARAMS");
+
+                    }
                 });
 
 
-            }).catch((e: Error) => {
+                //@ts-ignore
+                schema.validate(req.body).then((values) => {
 
-                // feedback
-                log.notice("User send invalid command params", req.command, req.body);
-                res.status(400).end("INVALID_COMMAND_PARAMS");
 
-            });
+                    // feedback
+                    log.verbose("Command params validation passed");
+                    log.debug("Send command to adapter handler interface eventemitter");
+
+
+                    // let adapter handler protol implementation
+                    handler.iface.emit("command", req.command, values);
+
+
+                    // wait that adapter handler has done his job
+                    handler.output.once("command", (data: any) => {
+                        log.debug("Adapter handler sendet command");
+                        res.end(data);
+                    });
+
+
+                }).catch((e: Error) => {
+
+                    // feedback
+                    log.verbose("Command params validation failed!");
+                    log.notice("User send invalid command params", req.command, req.body);
+                    res.status(400).end("INVALID_COMMAND_PARAMS");
+
+                });
+
+            } catch (e) {
+
+                log.notice("Invalid params passed, %j, got %j", req.command.params, req.body);
+                return res.status(400).end("INVALID_PARAMS");
+
+            }
 
 
         } else {
 
-            //TODO was von den drei ist nicht existent?
-            log.verbose("Adapter/interface/device (%s) not connected", req.command.interface.toString());
-            res.status(500).end("IFACE_NOT_CONNECTED")
+            log.notice("No connection for interface (%s) etablished!", req.command.interface.toString());
+            return res.status(500).end("IFACE_NOT_CONNECTED")
 
         }
     });

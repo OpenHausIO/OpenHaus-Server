@@ -1,12 +1,12 @@
 import * as winston from "winston";
 import * as path from "path";
+import * as safe from "colors/safe";
+import * as dateFormat from "dateformat";
 
-const safe = require('colors/safe');
-const dateFormat = require('dateformat');
+// NOTE use https://www.npmjs.com/package/triple-beam?
+//TODO: https://github.com/winstonjs/winston#working-with-multiple-loggers-in-winston
 
-
-
-const myCustomLevels = {
+const Levels = {
     levels: {
         error: 0,
         warn: 1,
@@ -37,7 +37,7 @@ const consoleFormat = (name: string) => {
         winston.format.printf((msg) => {
 
             //@ts-ignore
-            const color = safe[myCustomLevels.colors[msg.level]];
+            const color = safe[Levels.colors[msg.level]];
 
             const timestamp = dateFormat(msg.timestamp, "yyyy.mm.dd - HH:MM.ss.l");
             return `[${color(timestamp)}][${color(msg.label)}][${color(msg.level)}] ${msg.message}`;
@@ -49,15 +49,10 @@ const consoleFormat = (name: string) => {
 
 
 const logger = winston.createLogger({
-    levels: myCustomLevels.levels,
+    levels: Levels.levels,
     exitOnError: false,
     level: "verbose",
     transports: [
-        //
-        // - Write to all logs with level `info` and below to `combined.log` 
-        // - Write all logs error (and below) to `error.log`.
-        //
-        //new winston.transports.File({ filename: 'error.log', level: 'error' }),
         new winston.transports.File({
             format: winston.format.combine(
                 winston.format.splat(),
@@ -69,18 +64,7 @@ const logger = winston.createLogger({
 });
 
 
-// NOTE use https://www.npmjs.com/package/triple-beam?
-/*
-const colors = {
-    verbose: safe.gray,
-    debug: safe.cyan,
-    info: safe.blue,
-    warn: safe.yellow,
-    error: safe.red
-}*/
 
-
-//TODO: https://github.com/winstonjs/winston#working-with-multiple-loggers-in-winston
 if (process.env.NODE_ENV !== "production") {
 
 
@@ -94,7 +78,7 @@ if (process.env.NODE_ENV !== "production") {
         })
     );
 
-
+    console.log();
     logger.verbose("Verbose");
     logger.debug("Debug");
     logger.info("Info");
@@ -110,7 +94,7 @@ if (process.env.NODE_ENV !== "production") {
 logger.create = (name: string) => {
 
     return winston.loggers.add(name, {
-        levels: myCustomLevels.levels,
+        levels: Levels.levels,
         level: "verbose",
         transports: [
             new winston.transports.Console({
