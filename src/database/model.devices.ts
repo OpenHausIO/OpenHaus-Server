@@ -106,6 +106,9 @@ const interfaceSchema = new mongoose.Schema({
 
             }
         }
+    },
+    options: {
+        type: Object
     }
 });
 
@@ -123,6 +126,10 @@ const schema = new mongoose.Schema({
     room: {
         type: ObjectId,
         ref: "Rooms"
+    },
+    enabled: {
+        type: Boolean,
+        default: true
     },
     interfaces: {
         type: [interfaceSchema],
@@ -148,7 +155,7 @@ schema.pre("validate", function (next) {
 
     //@ts-ignore
     if (!this.interfaces || this.interfaces.length <= 0) {
-        return next(new Error("INTERFACE_INVALID"));
+        return next(new Error("INTERFACE_VALIDATION"));
     }
 
     next();

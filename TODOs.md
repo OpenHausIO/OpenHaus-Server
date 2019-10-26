@@ -1,6 +1,8 @@
 ### GENERAL
 1) Fix `//NOTE`, `//TODO`, `//FIXME`
 2) Add 1) comments to build process warning/error
+3) sub resources methods
+   - get/put/post/delete...
 
 
 ### INTERFACES

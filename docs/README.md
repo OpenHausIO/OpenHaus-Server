@@ -1,6 +1,6 @@
 # Documentation
 **For Developer.**\
-Example Database dump can be found [here](./assets/database.zip).
+Example Database dump can be found [here](./assets/database.gz).
 
 ## Architecture
 1) Overview

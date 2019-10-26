@@ -4,8 +4,13 @@ const ObjectId = mongoose.Schema.Types.ObjectId;
 
 export interface IStack {
     command: ObjectID,
-    params: Object,
-    makro: Object
+    makro: Object,
+    settings: {
+        cache: {
+            enabled: Boolean,
+            livetime: Number
+        }
+    }
 }
 
 export interface IDocument extends mongoose.MongooseDocument {
@@ -26,7 +31,20 @@ const schema = new mongoose.Schema({
     },
     banks: {
         type: [bankSchema],
-        default: []
+        //default: []
+    },
+    settings: {
+        cache: {
+            type: Object,
+            enabled: {
+                type: Boolean,
+                default: true
+            },
+            livetime: {
+                type: Number,
+                default: (1000 * 60) * 60 * 24 * 7 // 1 week (604800000)
+            }
+        }
     }
 });
 

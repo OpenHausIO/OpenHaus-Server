@@ -28,16 +28,17 @@ const paramsSchema = new mongoose.Schema({
     value: {
         type: {
             type: String,
-            enum: ["number", "string", "boolean"],
+            enum: ["number", "string", "boolean", "binary"],
             required: true,
         },
+        // NOTE noch mal checken was default & pattern machen
         // keys below are Joi functions
-        // values paramter for functions
+        // values parameter for functions
         // https://hapi.dev/family/joi/?v=16.1.4#introduction
         min: Number,
         max: Number,
         default: { type: mongoose.Schema.Types.Mixed },
-        pattern: mongoose.Schema.Types.Mixed,
+        pattern: { type: mongoose.Schema.Types.Mixed },
     }
 });
 
@@ -46,6 +47,10 @@ const commandSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
+    },
+    enabled: {
+        type: Boolean,
+        default: true
     },
     interface: {
         type: ObjectId,
