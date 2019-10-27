@@ -6,7 +6,10 @@ Backend/API Server
 - MongoDB (https://mongodb.com)
 
 ## Documentation
-Developer documentation (included HTTP API) can be found ![here](docs/README.md)
+Developer documentation (included HTTP API) can be found ![here](docs/README.md).
+
+## Docker container is ready
+Take a short (literally) look ![here](docs/DOCKER.md).
 
 ## TODOs
 - [x] GitHub repository init

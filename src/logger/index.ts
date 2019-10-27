@@ -53,6 +53,9 @@ const logger = winston.createLogger({
     exitOnError: false,
     level: process.env.LOG_LEVEL,
     transports: [
+        new winston.transports.Console({
+            format: consoleFormat("system")
+        }),
         new winston.transports.File({
             format: winston.format.combine(
                 winston.format.splat(),
@@ -72,11 +75,13 @@ if (process.env.NODE_ENV !== "production") {
     logger.exitOnError = true;
 
     // add logger to winston
+    /* remove console from production ?!    
     logger.add(
         new winston.transports.Console({
             format: consoleFormat("system")
         })
     );
+*/
 
     console.log();
     logger.verbose("Verbose");

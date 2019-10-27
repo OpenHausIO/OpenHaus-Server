@@ -11,6 +11,7 @@ process.env = Object.assign({
     DB_PORT: 27017,
     DB_AUTH_USER: "",
     DB_AUTH_PASS: "",
+    DB_CONN_TIMEOUT: 5000,
     BCRYPT_SALT_ROUNDS: 10,
     HTTP_HOST: "0.0.0.0",
     HTTP_PORT: 80,
@@ -65,12 +66,14 @@ fs.access(`${__dirname}/private-key.pem`, fs.constants.F_OK, (err) => {
 
                 execSync(`openssl genpkey -algorithm RSA -out ./private-key.pem -pkeyopt rsa_keygen_bits:${process.env.RSA_KEYGEN_BITS}`, {
                     cwd: __dirname,
-                    stdio: ["ignore", "inherit", "inherit"]
+                    //FIXME not working in docker container
+                    stdio: ["ignore", "ignore", "ignore"]
                 });
 
                 execSync("openssl rsa -pubout -in ./private-key.pem -out ./public-key.pem", {
                     cwd: __dirname,
-                    stdio: ["ignore", "ignore", "inherit"]
+                    //FIXME not working in docker container
+                    stdio: ["ignore", "ignore", "ignore"]
                 });
 
                 logger.info("Public/private key-pair generated");
@@ -121,4 +124,5 @@ setImmediate(() => {
 
 
     });
+
 });
