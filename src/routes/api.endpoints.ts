@@ -1,12 +1,13 @@
 import * as Express from "express";
-import { IEndpoints, ICommand } from "../database/model.endpoints";
+import { IEndpoint, ICommand } from "../database/model.endpoints";
 //import { ObjectId } from "bson";
 import * as Winston from "winston";
 import * as Joi from "joi";
 import { __values } from 'tslib';
 
+
 interface IRequest extends Express.Request {
-    doc: IEndpoints,
+    doc: IEndpoint,
     command: ICommand,
 }
 

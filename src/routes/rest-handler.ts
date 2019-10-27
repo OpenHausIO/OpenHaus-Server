@@ -103,6 +103,14 @@ module.exports = (log: Winston.Logger) => {
             const query = model.find(req.body);
             query.populate(req.populate);
 
+            if (req.params.limit) {
+                query.limit(Number(req.params.limit));
+            }
+
+            if (req.params.skip) {
+                query.skip(Number(req.params.skip));
+            }
+
             query.exec((err, docs) => {
 
                 if (err) {
@@ -135,6 +143,21 @@ module.exports = (log: Winston.Logger) => {
             const query = model.find({});
             query.populate(req.populate);
 
+            if (req.params.limit) {
+                query.limit(Number(req.params.limit));
+            }
+
+            if (req.params.skip) {
+                query.skip(Number(req.params.skip));
+            }
+
+            /*
+            if (req.params.page) {
+                query.limit(req.params.limit || 10);
+                query.skip(req.params.limit * req.params.page)
+            }
+            */
+
             // execute query
             query.exec((err: Error, docs: Array<Document>) => {
 
@@ -157,8 +180,6 @@ module.exports = (log: Winston.Logger) => {
         ) => {
 
             (new model(req.body)).save((err, data) => {
-
-                console.log(err)
 
                 if (err) {
                     log.error(err);

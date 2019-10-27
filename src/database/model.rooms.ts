@@ -2,7 +2,7 @@ import * as mongoose from "mongoose";
 import { ObjectId } from 'bson';
 
 
-export interface IRooms {
+export interface IRoom extends mongoose.Document {
     _id: ObjectId,
     name: String,
     icon: String,

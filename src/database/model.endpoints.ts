@@ -11,7 +11,7 @@ export interface ICommand {
 }
 
 
-export interface IEndpoints {
+export interface IEndpoint extends mongoose.Document {
     _id: ObjectId,
     name: String,
     icon: String,

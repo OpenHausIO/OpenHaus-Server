@@ -56,7 +56,7 @@ module.exports = (
 
 
         if (!isWebSocketRequest(req)) {
-            return res.status(405).end("MUST_BE_A_WS_CONNECTION");
+            return res.status(426).end("MUST_BE_A_WS_CONNECTION");
         }
 
         // hanlde websocket upgrade

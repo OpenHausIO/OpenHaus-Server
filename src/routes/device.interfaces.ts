@@ -3,7 +3,7 @@ import * as WebSocket from "ws";
 import { EventEmitter } from "events";
 import * as Winston from "winston";
 
-import { IDevices } from "../database/model.devices";
+import { IDevice, IInterface } from "../database/model.devices";
 
 
 export interface IAdapter {
@@ -15,9 +15,9 @@ export interface IAdapter {
 
 
 export interface IRequest extends Express.Request {
-    doc: IDevices, //Document
+    doc: IDevice, //Document
     adapter?: IAdapter,
-    interface?: Object
+    interface?: IInterface
 }
 
 

@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenHaus - SmartHome/IoT Server
+Documentation=https://open-haus.io
+After=network.target
+
+[Service]
+Environment=NODE_ENV=production
+Environment=HTTP_PORT=3000
+Type=simple
+ExecStart=/usr/bin/node /opt/OpenHaus-Server
+WorkingDirectory=/opt/OpenHaus-Server
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

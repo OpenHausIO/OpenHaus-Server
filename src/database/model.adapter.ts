@@ -1,7 +1,7 @@
 import * as mongoose from "mongoose";
 
 
-export interface Adapters {
+export interface IAdapter extends mongoose.Document {
     name: String,
     descprition: String,
     version: Number,

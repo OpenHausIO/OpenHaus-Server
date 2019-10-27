@@ -13,7 +13,7 @@ export interface IStack {
     }
 }
 
-export interface IDocument extends mongoose.MongooseDocument {
+export interface IScene extends mongoose.Document {
     name: String,
     banks: Array<IStack>
 }

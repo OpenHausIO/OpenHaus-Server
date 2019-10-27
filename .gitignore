@@ -17,3 +17,7 @@ adapter/
 
 # Optional npm cache directory
 .npm
+
+# private/public key-pair
+private-key.pem
+public-key.pem

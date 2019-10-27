@@ -16,7 +16,7 @@ enum InterfaceTypes {
 }
 
 
-export interface IInterfaces {
+export interface IInterface {
     _id: ObjectId,
     type: InterfaceTypes,
     description: String,
@@ -24,7 +24,7 @@ export interface IInterfaces {
     settings: Object
 }
 
-export interface IDevices {
+export interface IDevice extends mongoose.Document {
     _id: ObjectId,
     name: String,
     icon: String,
@@ -36,7 +36,7 @@ export interface IDevices {
         web?: String,
         revision?: Number
     },
-    interfaces: Array<IInterfaces>
+    interfaces: Array<IInterface>
 }
 
 
@@ -76,6 +76,7 @@ const interfaceSchema = new mongoose.Schema({
         // NOTE:
         // if no adapter set, use vanilla EventEmitter: 
         // created for adapter -> refactor ?
+        // use adapter "raw" -> plain tcp/udp/ws from connector
     },
     settings: {
         type: Object,

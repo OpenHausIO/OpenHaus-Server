@@ -1,10 +1,10 @@
 import * as Express from "express";
-import { IDocument } from "../database/model.scenes";
+import { IScene } from "../database/model.scenes";
 import * as Winston from "winston";
 
 
 interface IRequest extends Express.Request {
-    doc: IDocument
+    doc: IScene
 }
 
 

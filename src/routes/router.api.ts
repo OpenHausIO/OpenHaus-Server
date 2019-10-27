@@ -6,6 +6,10 @@ const logger = require("../logger/index.js");
 const handler = require("./rest-handler.js");
 const restHandler = handler(logger.create("rest-handler"))
 
+const auth = require("./router.auth.js");
+
+
+
 
 module.exports = (app: Express.Router) => {
 
@@ -30,7 +34,13 @@ module.exports = (app: Express.Router) => {
     });
 
 
+    // protect whole router
+    // user need specific rights
+    auth.protect(router);
+
+
     // create sub router for each model/schema
+    const routerUsers = Express.Router();
     const routerDevices = Express.Router();
     const routerRooms = Express.Router();
     const routerEndpoints = Express.Router();
@@ -39,6 +49,7 @@ module.exports = (app: Express.Router) => {
 
 
     // create rest route for each model/schema
+    restHandler(model("Users"), routerUsers);
     restHandler(model("Devices"), routerDevices);
     restHandler(model("Rooms"), routerRooms);
     restHandler(model("Endpoints"), routerEndpoints);
@@ -47,6 +58,7 @@ module.exports = (app: Express.Router) => {
 
 
     // mount 
+    router.use("/users", routerUsers);
     router.use("/devices", routerDevices);
     router.use("/rooms", routerRooms);
     router.use("/endpoints", routerEndpoints);
@@ -55,6 +67,7 @@ module.exports = (app: Express.Router) => {
 
 
     // extend rest routes
+    //require("./api.users.js")(logger.create("users"), routerUsers);     // <host>/api/users
     require("./api.endpoints.js")(logger.create("endpoints"), routerEndpoints);     // <host>/api/endpoints
     require("./device.interfaces.js")(logger.create("interfaces"), routerDevices);     // <host>/api/devices/<id>/interfaces
     require("./device.connector.js")(logger.create("connector"), routerDevices);       // <host>/api/devices/<id>/connector

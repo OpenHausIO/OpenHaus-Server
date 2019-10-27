@@ -51,7 +51,7 @@ const consoleFormat = (name: string) => {
 const logger = winston.createLogger({
     levels: Levels.levels,
     exitOnError: false,
-    level: "verbose",
+    level: process.env.LOG_LEVEL,
     transports: [
         new winston.transports.File({
             format: winston.format.combine(
@@ -92,10 +92,9 @@ if (process.env.NODE_ENV !== "production") {
 
 //@ts-ignore
 logger.create = (name: string) => {
-
     return winston.loggers.add(name, {
         levels: Levels.levels,
-        level: "verbose",
+        level: process.env.LOG_LEVEL,
         transports: [
             new winston.transports.Console({
                 format: consoleFormat(name)
@@ -109,7 +108,6 @@ logger.create = (name: string) => {
             })
         ]
     });
-
 }
 
 
