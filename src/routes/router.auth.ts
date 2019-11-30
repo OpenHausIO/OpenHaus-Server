@@ -38,7 +38,10 @@ const GENERATE_TOKEN = (
         }, PRIVATE_KEY, {
             algorithm: "RS512",
             ...options
-        }, (err, token: String) => {
+        }, (
+            err: Error,
+            token: String
+        ) => {
 
             if (err) {
                 log.error(err, "Could not sign/create token for User/E-Mail '%s'", user.email)
@@ -50,15 +53,19 @@ const GENERATE_TOKEN = (
                 //@ts-ignore
                 token,
                 user: user._id
-            })).save((err: Mongoose.Error, safed: IToken) => {
+            })).save((
+                err: Mongoose.Error,
+                safed: IToken
+            ) => {
 
                 if (err || !safed) {
-                    log.error(err, "Could not safe token in database");
+                    log.error(err, "Could not safe token in database: %s", err.message);
                     return res.status(500).end();
                 }
 
                 // feedback
                 log.info("User '%s' (%s) successfull logged in.", user.name, user.email);
+                log.verbose("New token created for user %s", user.email);
 
                 //@ts-ignore
                 res.setHeader("x-token", token);
@@ -157,11 +164,12 @@ module.exports = (app: Express.Router) => {
         // NOTE: for future use:
         // - renew token
         // - upgrade rights
+
         //@ts-ignore
         const token = (req.headers["x-token"] || req.headers["bearer"]);
 
         if (!req.body.email || !req.body.password) {
-            log.warn("E-Mail/Password not sent");
+            log.warn("E-Mail/Password not sent, %j", req.body);
             return res.status(400).end();
         }
 
@@ -244,6 +252,66 @@ module.exports = (app: Express.Router) => {
     });
 
 
+
+    router.get("/confirm/:email", (req, res, next) => {
+
+        req.params.email = Buffer.from(req.params.email, 'base64').toString('utf8');
+
+        // feedback
+        log.debug("Confirmed E-Mail %s called", req.params.email);
+
+
+        users.findOne({
+            email: req.params.email,
+            enabled: false
+        }).then((query) => {
+
+            if (!query) {
+                return Promise.reject(new Error("USER_ALLREADY_ACTIVATED"));
+            }
+
+            return query.updateOne({
+                enabled: true
+            });
+
+        }).then((result) => {
+            if (result.ok) {
+
+                log.info("Account %s confirumed/enabled!", req.params.email);
+
+                log.verbose("%j", {
+                    query: result,
+                    params: req.params
+                });
+
+                res.status(200).end();
+
+            } else {
+
+                log.warn("Something fishy, could not confirm user: %s", req.params.email);
+
+                return Promise.reject(new Error("NOT_EXPECTED_RESULT"));
+
+            }
+        }).catch((err) => {
+            if (err && err.message === "USER_ALLREADY_ACTIVATED") {
+
+                log.warn("User '%s' allready actived/confirmed/enabled", req.params.email);
+                res.status(406).end();
+
+            } else {
+
+                log.warn("User confirmation failed due to '%s'", err.message);
+                res.status(500).end();
+
+            }
+        });
+
+
+
+    });
+
+
 };
 
 
@@ -303,7 +371,12 @@ module.exports.protect = (router: Express.Router, rights: Array<String> = []) =>
 
 
                 if (decoded.uuid != process.env.UUID) {
+
                     log.warn("UUID mismatch! token.uuid = env.UUID, %s = %s", decoded.uuid, process.env.UUID);
+
+                    //TODO remove jwt from database!
+                    log.error("@TODO remove token from database!");
+
                     return res.status(401).end();
                 }
 

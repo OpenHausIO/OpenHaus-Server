@@ -6,8 +6,9 @@ export interface IUser extends mongoose.Document {
     _id: ObjectId,
     name: String,
     email: String,
-    enabled: Boolean
-}
+    enabled: Boolean,
+    //password: String
+};
 
 
 // create schema
@@ -18,12 +19,18 @@ const schema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true
+        required: true,
+        //unique: true
     },
     password: {
         type: String,
         required: true
     },
+    /*confirmed: {
+        type: Boolean,
+        value: false,
+        default: false
+    },*/
     enabled: {
         type: Boolean,
         default: false
@@ -33,35 +40,78 @@ const schema = new mongoose.Schema({
 
 schema.pre("save", function (next) {
 
-    //@ts-ignore
-    if (this.password) {
+    const passwordHash = new Promise((resolve, reject) => {
         //@ts-ignore
-        bcrypt.hash(this.password, process.env.BCRYPT_SALT_ROUNDS, (err, hash) => {
-
-            if (err) {
-                //NOTE add logger ?
-                return next(err);
-            }
-
+        if (this.password) {
             //@ts-ignore
-            this.password = hash;
-            next();
+            bcrypt.hash(this.password, process.env.BCRYPT_SALT_ROUNDS, (err, hash) => {
 
-        });
-    }
+                if (err) {
+                    //NOTE add logger ?
+                    console.log(err, "Could not hash user password");
+                    return reject(err);
+                }
 
+                //console.log("User password hashed!", hash);
+
+                //@ts-ignore
+                this.password = hash;
+                resolve();
+
+            });
+        } else {
+            resolve();
+        }
+    });
+
+
+    const enabledCheck = new Promise((resolve, reject) => {
+        //@ts-ignore
+        if (this.enabled) {
+            //TODO remove tokens?!
+            // is user is disabled
+            // why should he have active logins ?!
+            resolve();
+        } else {
+            resolve();
+        }
+    });
+
+
+    Promise.all([
+        passwordHash,
+        enabledCheck
+    ]).then(() => {
+
+        //console.log("All user stuff pre things");
+        next();
+
+    }).catch((err) => {
+
+        //console.log("Error on asdf", err);
+        next(err);
+
+    });
+
+
+
+    // fix for account creation
+    // - remove password from response after save/put
+    // TODO not working! -> if removed 
     //@ts-ignore
-    if (!this.enabled) {
-        //TODO remove tokens?!
-        // is user is disabled
-        // why should he have active logins ?!
-    }
+    //delete this.password;
 
 });
 
-schema.pre("find", function () {
-    this.select("-password");
-});
+
+
+["find", "findOne"].forEach((k) => {
+    schema.pre(k, function () {
+        //@ts-ignore
+        this.select("-password");
+    });
+})
+
 
 
 // register model

@@ -27,6 +27,6 @@ COPY ./package.json ./
 
 ENV HTTP_PORT=8080
 ENV NODE_ENV=production
-ENV DB_HOST=172.17.0.1
+# ENV DB_HOST=10.0.0.1
 
 CMD ["node", "index.js"]

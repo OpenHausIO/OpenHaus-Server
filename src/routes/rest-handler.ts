@@ -1,17 +1,22 @@
 import { Request, Response, Router } from "express";
 import { Error, Model, Document, Schema } from "mongoose";
 import * as Winston from "winston";
+import * as Express from "express";
 
-interface IPopulate {
+export interface IPopulate {
     path: String,
     populate: [] | IPopulate[]
 }
 
-interface IRequest extends Request {
+export interface IRequest extends Request {
     populate: IPopulate | [],
     doc: Document
 };
 
+
+export interface IResponse extends Response {
+    result: any
+};
 
 
 module.exports = (log: Winston.Logger) => {
@@ -132,7 +137,8 @@ module.exports = (log: Winston.Logger) => {
         //@TODO add query range/size?!
         router.get("/:_id?", (
             req: IRequest,
-            res
+            res: Express.Response,
+            next: Express.NextFunction
         ) => {
 
             if (req.params._id && req.doc) {
@@ -169,6 +175,11 @@ module.exports = (log: Winston.Logger) => {
 
                 res.json(docs);
 
+                //@ts-ignore
+                res.result = docs;
+
+                next();
+
             });
 
         });
@@ -176,7 +187,8 @@ module.exports = (log: Winston.Logger) => {
 
         router.put("/", (
             req: IRequest,
-            res: Response
+            res: Response,
+            next: Express.NextFunction
         ) => {
 
             (new model(req.body)).save((err, data) => {
@@ -188,6 +200,11 @@ module.exports = (log: Winston.Logger) => {
 
                 res.json(data);
 
+                //@ts-ignore
+                res.result = data;
+
+                next();
+
             });
 
         });
@@ -195,7 +212,8 @@ module.exports = (log: Winston.Logger) => {
 
         router.post("/:_id", (
             req: IRequest,
-            res: Response
+            res: Response,
+            next: Express.NextFunction
         ) => {
 
             req.doc.updateOne({
@@ -209,6 +227,11 @@ module.exports = (log: Winston.Logger) => {
 
                 res.json(result);
 
+                //@ts-ignore
+                res.result = result;
+
+                next();
+
             });
 
         });
@@ -216,7 +239,8 @@ module.exports = (log: Winston.Logger) => {
 
         router.delete("/:_id", (
             req: IRequest,
-            res: Response
+            res: Response,
+            next: Express.NextFunction
         ) => {
 
             req.doc.remove((err, result) => {
@@ -227,6 +251,11 @@ module.exports = (log: Winston.Logger) => {
                 }
 
                 res.json(result);
+
+                //@ts-ignore
+                res.result = result;
+
+                next();
 
             });
 

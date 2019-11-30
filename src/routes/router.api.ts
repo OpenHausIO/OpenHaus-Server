@@ -34,7 +34,7 @@ module.exports = (app: Express.Router) => {
     });
 
 
-    // protect whole router
+    // protect whole api router
     // user need specific rights
     auth.protect(router);
 
@@ -48,6 +48,14 @@ module.exports = (app: Express.Router) => {
     const routerScenes = Express.Router();
 
 
+    /*
+        routerUsers.use((req, res, next) => {
+            console.log("pre User router called");
+            next();
+        });
+    */
+
+
     // create rest route for each model/schema
     restHandler(model("Users"), routerUsers);
     restHandler(model("Devices"), routerDevices);
@@ -57,7 +65,7 @@ module.exports = (app: Express.Router) => {
     restHandler(model("Scenes"), routerScenes);
 
 
-    // mount 
+    // mount RESTful router
     router.use("/users", routerUsers);
     router.use("/devices", routerDevices);
     router.use("/rooms", routerRooms);
@@ -66,8 +74,12 @@ module.exports = (app: Express.Router) => {
     router.use("/scenes", routerScenes);
 
 
+
+
+
+
     // extend rest routes
-    //require("./api.users.js")(logger.create("users"), routerUsers);     // <host>/api/users
+    require("./api.users.js")(logger.create("users"), routerUsers);     // <host>/api/users
     require("./api.endpoints.js")(logger.create("endpoints"), routerEndpoints);     // <host>/api/endpoints
     require("./device.interfaces.js")(logger.create("interfaces"), routerDevices);     // <host>/api/devices/<id>/interfaces
     require("./device.connector.js")(logger.create("connector"), routerDevices);       // <host>/api/devices/<id>/connector

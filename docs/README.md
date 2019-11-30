@@ -8,6 +8,29 @@ Example Database dump can be found [here](./assets/database.gz).
 3) Connector
 4) Endpoints
 
+
+### Environment variables
+| Name               | Default    | Description                          |
+| :----------------- | :--------- | :----------------------------------- |
+| DEBUG              |            |                                      |
+| CLEAR_SCREEN       | true       |                                      |
+| DB_NAME            | OpenHaus   | MongoDB Database name                |
+| DB_HOST            | 127.0.0.1  | MongoDB Database host                |
+| DB_PORT            | 27017      | MongoDB Database port                |
+| DB_AUTH_USER       |            | MongoDB Authentication username      |
+| DB_AUTH_PASS       |            | MongoDB Authentication password      |
+| DB_AUTH_SOURCE     | admin      | MongoDB Authentication source        |
+| DB_CONN_TIMEOUT    | 5000       | Timeout for connetion attempt        |
+| BCRYPT_SALT_ROUNDS | 10         | Bcrypt salt rounds for password hash |
+| HTTP_HOST          | 0.0.0.0    | HTTP Server listening IP             |
+| HTTP_PORT          | 80         | HTTP Server liistening port          |
+| HTTP_BACKLOG       | 511        | HTTP Server Backlog                  |
+| LOG_LEVEL          | info       | Set the logger level                 |
+| UUID               | *__Auto__* | OpenHaus instance UUID               |
+| RSA_KEYGEN_BITS    | 2048       | OpenSSL key length                   |
+| NODE_ENV           | production |                                      |
+
+
 ### 1) Overview
 ![architecture](assets/img/architecture.png)
 

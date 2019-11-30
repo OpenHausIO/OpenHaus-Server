@@ -4,9 +4,12 @@
 3) sub resources methods
    - get/put/post/delete...
 
+4) Add ESlint/TSlint
+5) Pass err.code to all error message ?!
+
 
 ### INTERFACES
-2) req.(adapter|states).device.emit
+1) req.(adapter|states).device.emit
    - benötigt ?
    - middleware:
      - :<event> wrapper/handler/converter
@@ -32,9 +35,7 @@
 ### DATABASE
 
 
-### AUTHENTIFIZIERUNG (low)
-1) interface auth
-2) auto. token generation for connector (if valid/auth request)
+### AUTHENTIFIZIERUNG
 
 
 ### SZENEN
@@ -44,3 +45,10 @@
    - if/else
    - date/time/value?!
 3) fetch.ts -> Caching einrichten!
+
+
+- remote/client ip richtig setzen (lib.auth/express)
+- x-real-ip...
+- BadRequest error
+- process.env Boolean convert 
+- remove password in response after an account is created
