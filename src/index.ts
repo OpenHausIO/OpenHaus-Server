@@ -2,9 +2,7 @@ import * as express from "express";
 import * as fs from "fs";
 import { execSync } from 'child_process';
 import * as uuid from "uuid/v4";
-const pkg = require("../package.json");
-
-console.log(pkg);
+const pkg = require(__dirname + "/package.json");
 
 
 //TODO add uuid to package.json
@@ -12,7 +10,8 @@ console.log(pkg);
 
 const DEFAULTS = {
     // General settings
-    DEBUG: "",
+    //@ts-ignore
+    DEBUG: null,
     LOG_LEVEL: "info",
     UUID: uuid(),
     RSA_KEYGEN_BITS: 2048,
@@ -53,7 +52,7 @@ process.env = Object.assign(DEFAULTS, process.env);
 if (process.env.NODE_ENV !== "production") {
 
     //console.log("NODE_ENV = %s", process.env.NODE_ENV);
-    console.log(process.env.HTTP_NAME)
+    //console.log(process.env.HTTP_NAME)
 
     // NOTE should we keep dotenv as dependencie?
     // > move up to process.env = Object.assign(..., dot.parsed);
@@ -90,12 +89,11 @@ const log = logger.create("webserver");
 if (!pkg.uuid) {
     try {
 
-        logger.debug("Use generate UUID from startup");
+        logger.debug("Use generated UUID from startup");
         logger.verbose("Save UUID to package.json");
-        logger.warn("fs.writeFileSync DISABLED!!!!");
 
         pkg.uuid = process.env.UUID;
-        //fs.writeFileSync("./package.json", JSON.stringify(pkg));
+        fs.writeFileSync(__dirname + "/package.json", JSON.stringify(pkg, null, 4));
 
     } catch (e) {
 
@@ -105,7 +103,7 @@ if (!pkg.uuid) {
     }
 } else {
 
-    logger.debug("Use UUID from packge.json");
+    logger.debug("Use UUID from package.json");
     process.env.UUID = pkg.uuid;
 
 }
