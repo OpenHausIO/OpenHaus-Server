@@ -36,7 +36,9 @@ module.exports = (app: Express.Router) => {
 
     // protect whole api router
     // user need specific rights
-    auth.protect(router);
+    if (process.env.API_PROTECTED == "true") {
+        auth.protect(router);
+    }
 
 
     // create sub router for each model/schema

@@ -2,11 +2,8 @@ import * as express from "express";
 import * as fs from "fs";
 import { execSync } from 'child_process';
 import * as uuid from "uuid/v4";
-const pkg = require(__dirname + "/package.json");
+const pkg = require(`${__dirname}/package.json`);
 
-
-//TODO add uuid to package.json
-// copy package.json to dist folder
 
 const DEFAULTS = {
     // General settings
@@ -16,6 +13,9 @@ const DEFAULTS = {
     UUID: uuid(),
     RSA_KEYGEN_BITS: 2048,
     NODE_ENV: "development",
+    BCRYPT_SALT_ROUNDS: 10,
+    // API settings
+    API_PROTECTED: true,
     // Database settings
     DB_NAME: "OpenHaus",
     DB_HOST: "127.0.0.1",
@@ -24,7 +24,6 @@ const DEFAULTS = {
     DB_AUTH_PASS: "",
     DB_AUTH_SOURCE: "admin",
     DB_CONN_TIMEOUT: 5000,
-    BCRYPT_SALT_ROUNDS: 10,
     // HTTP Server settings
     HTTP_HOST: "0.0.0.0",
     HTTP_PORT: 80,
@@ -32,7 +31,8 @@ const DEFAULTS = {
     HTTP_NAME: "open-haus.lan",
     // SMTP Server settings
     SMTP_DEBUG: false,
-    SMTP_HOST: "127.0.0.1",
+    //@ts-ignore
+    SMTP_HOST: null,
     SMTP_PORT: 587,
     SMTP_SECURE: true,
     SMTP_AUTH_USER: "",
@@ -51,9 +51,6 @@ process.env = Object.assign(DEFAULTS, process.env);
 
 if (process.env.NODE_ENV !== "production") {
 
-    //console.log("NODE_ENV = %s", process.env.NODE_ENV);
-    //console.log(process.env.HTTP_NAME)
-
     // NOTE should we keep dotenv as dependencie?
     // > move up to process.env = Object.assign(..., dot.parsed);
     // > adjust path if moved/integrated
@@ -66,12 +63,6 @@ if (process.env.NODE_ENV !== "production") {
 
     // override existing env vars
     Object.assign(process.env, dot.parsed);
-
-
-    Object.keys(DEFAULTS).forEach((k) => {
-        //console.log("%s = %s", k, process.env[k]);
-    });
-
 
     if (process.env.CLEAR_SCREEN == "true") {
         require("clear")();
@@ -86,6 +77,13 @@ const logger = require("./logger/index.js");
 const log = logger.create("webserver");
 
 
+if (process.env.NODE_ENV === "development") {
+    Object.keys(DEFAULTS).forEach((k) => {
+        log.verbose("%s = %s", k, process.env[k]);
+    });
+}
+
+
 if (!pkg.uuid) {
     try {
 
@@ -93,7 +91,7 @@ if (!pkg.uuid) {
         logger.verbose("Save UUID to package.json");
 
         pkg.uuid = process.env.UUID;
-        fs.writeFileSync(__dirname + "/package.json", JSON.stringify(pkg, null, 4));
+        fs.writeFileSync(`${__dirname}/package.json`, JSON.stringify(pkg, null, 4));
 
     } catch (e) {
 
@@ -109,7 +107,7 @@ if (!pkg.uuid) {
 }
 
 
-// check if we have a keypair for signing our tokens
+// check if we have a keypair for signing JWT tokens
 fs.access(`${__dirname}/private-key.pem`, fs.constants.F_OK, (err) => {
     if (err) {
         if (err.code === "ENOENT") {
@@ -148,7 +146,7 @@ fs.access(`${__dirname}/private-key.pem`, fs.constants.F_OK, (err) => {
 
 
 // create express app instace
-// use express as http hanlder
+// use express as http handler
 const app = express();
 
 

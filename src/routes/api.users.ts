@@ -16,7 +16,7 @@ module.exports = (
 ) => {
 
 
-    if (process.env.NODE_ENV !== "production") {
+    if (process.env.NODE_ENV !== "production" && !process.env.SMTP_HOST) {
 
         // feedback
         log.debug("Use fake nodemailer smtp server");
@@ -68,11 +68,11 @@ module.exports = (
     ) => {
 
         // feebdack
-        log.debug("Post user (put) router called, %j", res.result.email);
+        log.debug("Post user (put) router called, %s", res.result.email);
 
 
         // convert/wrap email to base64 string
-        const urlEmail = Buffer.from(res.result.email).toString('base64');
+        const urlEmail = Buffer.from(res.result.email).toString("base64");
 
 
         // Create a SMTP transporter object
@@ -91,15 +91,14 @@ module.exports = (
         }, {
             from: `OpenHaus <no-reply@${process.env.SMTP_HOST}`,
             headers: {
-                "X-UUID": process.env.UUID,
-                //"X-Via": "OpenHaus"
+                "X-UUID": process.env.UUID
             }
         });
 
 
         const message = {
             to: `${res.result.name} - <${res.result.email}>`,
-            subject: 'Confirm your created account to continue!',
+            subject: 'Confirm your created OpenHaus account!',
             text: `Visit this page http://${process.env.HTTP_NAME}:${process.env.HTTP_PORT}/auth/confirm/${encodeURIComponent(urlEmail)} to confirm/activated your account!`,
             html: `Click here <a href="http://${process.env.HTTP_NAME}:${process.env.HTTP_PORT}/auth/confirm/${encodeURIComponent(urlEmail)}">to confirm</a>`
         };

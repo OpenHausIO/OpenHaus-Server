@@ -255,7 +255,7 @@ module.exports = (app: Express.Router) => {
 
     router.get("/confirm/:email", (req, res, next) => {
 
-        req.params.email = Buffer.from(req.params.email, 'base64').toString('utf8');
+        req.params.email = Buffer.from(req.params.email, "base64").toString("utf8");
 
         // feedback
         log.debug("Confirmed E-Mail %s called", req.params.email);

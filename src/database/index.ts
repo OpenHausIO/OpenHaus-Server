@@ -6,7 +6,7 @@ const log = logger.create("database");
 const URI = `mongodb://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=${process.env.DB_AUTH_SOURCE}`;
 
 //NOTE set as options ?!
-mongoose.set('useCreateIndex', true);
+mongoose.set("useCreateIndex", true);
 
 mongoose.connect(URI, {
     useNewUrlParser: true,
@@ -36,7 +36,7 @@ mongoose.plugin(function (
     schema.add({
         timestamps: {
             created: {
-                type: Number,
+                type: Number, //NOTE right type ?!
                 default: Date.now()
             },
             modified: Number
@@ -48,6 +48,9 @@ mongoose.plugin(function (
         schema.pre(k, function (next) {
             try {
 
+                // feedback
+                log.verbose("Timestamp update on hook '%s'", k);
+
                 //@ts-ignore
                 this.update({}, {
                     $set: {
@@ -55,6 +58,7 @@ mongoose.plugin(function (
                     }
                 });
 
+                //NOTE return neede?!
                 return next();
 
             } catch (e) {
