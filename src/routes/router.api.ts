@@ -4,7 +4,7 @@ import { model } from "mongoose";
 
 const logger = require("../logger/index.js");
 const handler = require("./rest-handler.js");
-const restHandler = handler(logger.create("rest-handler"))
+const restHandler = handler(logger.create("rest-handler"));
 
 const auth = require("./router.auth.js");
 
