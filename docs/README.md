@@ -127,3 +127,7 @@ we are able to connect via vanilla WebSocket to the interface:
 
 `<host>/api/devices/517f195e810c19729de760fa/interfaces/<iface id>`
 (Each interface gets it own unique id)
+
+
+### Startup process
+![Startup Process](./assets/img/startup-process.svg)

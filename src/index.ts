@@ -149,155 +149,156 @@ fs.access(`${__dirname}/private-key.pem`, fs.constants.F_OK, (err) => {
 
 
 
-// create express app instace
-// use express as http handler
-const app = express();
-
 
 process.nextTick(() => {
+
+    // create express app instace
+    // use express as http handler
+    const app = express();
+
 
     require("./database/index.js");
     require("./routes/router.auth.js")(app);
     require("./routes/router.api.js")(app);
     //require("./routes/router.plugins.js")(app);
 
-});
 
+    setImmediate(() => {
 
-setImmediate(() => {
+        // HTTP Server
+        // port based
+        (() => {
 
-    // HTTP Server
-    // port based
-    (() => {
+            const server = app.listen(
+                Number(process.env.HTTP_PORT),
+                String(process.env.HTTP_HOST),
+                Number(process.env.HTTP_BACKLOG), function () {
 
-        const server = app.listen(
-            Number(process.env.HTTP_PORT),
-            String(process.env.HTTP_HOST),
-            Number(process.env.HTTP_BACKLOG), function () {
+                    const addr = this.address();
+                    log.info("Listen on http://%s:%d", addr.address, addr.port);
 
-                const addr = this.address();
-                log.info("Listen on http://%s:%d", addr.address, addr.port);
+                });
+
+            server.on("error", (err) => {
+
+                //@ts-ignore
+                log.error("Could not start HTTP server on %s:%d (%s)", process.env.HTTP_HOST, process.env.HTTP_PORT, err.code);
+                //log.error(err, null);
+                return process.exit(1);
+
 
             });
 
-        server.on("error", (err) => {
-
-            //@ts-ignore
-            log.error("Could not start HTTP server on %s:%d (%s)", process.env.HTTP_HOST, process.env.HTTP_PORT, err.code);
-            //log.error(err, null);
-            return process.exit(1);
+        })();
 
 
-        });
+        // HTTP Server
+        // socket based
+        (() => {
+            if (String(process.env.HTTP_SOCK_ENABLED) == "true") {
 
-    })();
+                // feedback
+                log.debug("sock enabled, create/listen server");
+                log.warn("START SOCKET SERVER WITHOUT AUTHENTICATION LISTENING!");
 
+                // database stuff
+                const mongoose = require("mongoose");
+                const model = mongoose.model("Users");
 
-    // HTTP Server
-    // socket based
-    (() => {
-        if (String(process.env.HTTP_SOCK_ENABLED) == "true") {
+                model.find({}, (err: Error, docs: Array<IUser>) => {
 
-            // feedback
-            log.debug("sock enabled, create/listen server");
-            log.warn("START SOCKET SERVER WITHOUT AUTHENTICATION LISTENING!");
+                    if (err) {
+                        log.error(err, "Could not fetch databse: %s", err.message);
+                        return;
+                    }
 
-            // database stuff
-            const mongoose = require("mongoose");
-            const model = mongoose.model("Users");
+                    if (docs.length > 0) {
 
-            model.find({}, (err: Error, docs: Array<IUser>) => {
+                        // feedback
+                        logger.verbose("Users in databse found, dont start http socket server");
 
-                if (err) {
-                    log.error(err, "Could not fetch databse: %s", err.message);
-                    return;
-                }
+                    } else {
 
-                if (docs.length > 0) {
-
-                    // feedback
-                    logger.verbose("Users in databse found, dont start http socket server");
-
-                } else {
-
-                    log.debug("Create socket HTTP server");
-
-                    //@ts-ignore
-                    const server = http.createServer();
-
-
-                    server.on("request", require("./routes/socket-server.js"));
-
-
-                    server.on("error", (err: Error) => {
+                        log.debug("Create socket HTTP server");
 
                         //@ts-ignore
-                        log.error("Could not start HTTP socket server: %s", err.code);
-                        //log.error(err, null);
-                        return process.exit(1);
+                        const server = http.createServer();
 
 
-                    });
+                        server.on("request", require("./routes/socket-server.js"));
 
 
-                    server.listen(
-                        //@ts-ignore
-                        String(process.env.HTTP_SOCK_PATH),
-                        Number(process.env.HTTP_BACKLOG),
-                        () => {
+                        server.on("error", (err: Error) => {
 
-                            log.info("HTTP Socket server started on '%s'", process.env.HTTP_SOCK_PATH);
-
-                            process.stdin.resume();
-
-                            const exitHandler = (
-                                options: any,
-                                code: Number
-                            ) => {
-
-                                if (options.cleanup) {
-                                    try {
-
-                                        // remove socket file from file system
-                                        fs.unlinkSync(String(process.env.HTTP_SOCK_PATH));
-                                        process.exit();
-
-                                    } catch (e) {
-                                        //@ts-ignore
-                                        if (err.code === "ENOENT") {
-                                            logger.debug("sock file not found!");
-                                        } else {
-                                            logger.error(e, "Could not remove socket file! %s", e.code);
-                                        }
-                                    }
-                                }
-
-                                if (code || code === 0) {
-                                    console.log(code);
-
-                                }
-
-                                if (options.exit) {
-                                    process.exit();
-                                }
-
-                            };
-
-
-                            process.on('exit', exitHandler.bind(null, { cleanup: true }));
-                            process.on('SIGINT', exitHandler.bind(null, { exit: true }));
-                            process.on('SIGUSR1', exitHandler.bind(null, { exit: true }));
-                            process.on('SIGUSR2', exitHandler.bind(null, { exit: true }));
-                            process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
+                            //@ts-ignore
+                            log.error("Could not start HTTP socket server: %s", err.code);
+                            //log.error(err, null);
+                            return process.exit(1);
 
 
                         });
 
-                }
 
-            });
+                        server.listen(
+                            //@ts-ignore
+                            String(process.env.HTTP_SOCK_PATH),
+                            Number(process.env.HTTP_BACKLOG),
+                            () => {
 
-        }
-    })();
+                                log.info("HTTP Socket server started on '%s'", process.env.HTTP_SOCK_PATH);
+
+                                process.stdin.resume();
+
+                                const exitHandler = (
+                                    options: any,
+                                    code: Number
+                                ) => {
+
+                                    if (options.cleanup) {
+                                        try {
+
+                                            // remove socket file from file system
+                                            fs.unlinkSync(String(process.env.HTTP_SOCK_PATH));
+                                            process.exit();
+
+                                        } catch (e) {
+                                            //@ts-ignore
+                                            if (err.code === "ENOENT") {
+                                                logger.debug("sock file not found!");
+                                            } else {
+                                                logger.error(e, "Could not remove socket file! %s", e.code);
+                                            }
+                                        }
+                                    }
+
+                                    if (code || code === 0) {
+                                        console.log(code);
+
+                                    }
+
+                                    if (options.exit) {
+                                        process.exit();
+                                    }
+
+                                };
+
+
+                                process.on('exit', exitHandler.bind(null, { cleanup: true }));
+                                process.on('SIGINT', exitHandler.bind(null, { exit: true }));
+                                process.on('SIGUSR1', exitHandler.bind(null, { exit: true }));
+                                process.on('SIGUSR2', exitHandler.bind(null, { exit: true }));
+                                process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
+
+
+                            });
+
+                    }
+
+                });
+
+            }
+        })();
+
+    });
 
 });
