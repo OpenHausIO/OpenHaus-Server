@@ -28,6 +28,7 @@ mongoose.connection.on("error", (err) => {
 });
 
 
+/*
 mongoose.plugin(function (
     schema: mongoose.Schema,
     options: Object
@@ -71,7 +72,7 @@ mongoose.plugin(function (
 
 
 });
-
+*/
 
 
 

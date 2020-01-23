@@ -6,7 +6,8 @@ const { connector } = require("./states.js");
 
 import { IRequest } from "./device.interfaces";
 
-
+//FIXME
+//NOTE file/route obsulete ?
 
 function isWebSocketRequest(req: IRequest) {
 

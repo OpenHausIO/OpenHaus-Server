@@ -4,6 +4,9 @@ import { IRequest } from "../device.interfaces";
 import * as Express from "express";
 import * as Winston from "winston";
 
+// FIXME
+// NOTE file/route obsulete ?
+
 function checkObjectIdValid(id: any): Boolean {
     try {
 

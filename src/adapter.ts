@@ -20,7 +20,7 @@ model.find({}).lean().exec((err, adapters) => {
     }
 
 
-    adapters.map((adapter: IAdapter) => {
+    const adapter = adapters.map((adapter: IAdapter) => {
         return new Promise((resolve, reject) => {
             try {
 
@@ -34,11 +34,13 @@ model.find({}).lean().exec((err, adapters) => {
                 // store adapter factory
                 adapterFactorys.set(String(adapter._id), factory);
 
+                resolve();
+
             } catch (e) {
-                if (e.code === "ENOENT") {
+                if (e.code === "MODULE_NOT_FOUND") {
 
                     log.error("Adapter/folder '%s' not found!", adapter.folder);
-                    reject(e);
+                    resolve();
 
                 } else {
 
@@ -50,7 +52,8 @@ model.find({}).lean().exec((err, adapters) => {
         });
     });
 
-    Promise.all(adapters).then(() => {
+
+    Promise.all(adapter).then(() => {
 
         // feedback
         log.info("All %d adapters loaded", adapters.length);
@@ -73,6 +76,8 @@ model.find({}).lean().exec((err, adapters) => {
                         // create adapter instance for interface
                         let instance = factory(iface);
                         adapterInstances.set(iface._id, instance);
+
+
 
                     } catch (e) {
 

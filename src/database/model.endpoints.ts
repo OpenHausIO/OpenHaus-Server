@@ -6,7 +6,7 @@ export interface ICommand {
     _id: ObjectId,
     name: String,
     payload: any,
-    params: Object,
+    params: Object, // -> should array ?!
     interface: ObjectId
 }
 
@@ -48,6 +48,7 @@ const commandSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // NOTE enabled notwendig ?!
     enabled: {
         type: Boolean,
         default: true
@@ -85,6 +86,10 @@ const schema = new mongoose.Schema({
     commands: {
         type: [commandSchema],
         //required: true
+    },
+    enabled: {
+        type: Boolean,
+        default: true
     }
 });
 

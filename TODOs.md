@@ -9,6 +9,7 @@
 
 
 ### INTERFACES
+0) Adapter id string fick fuck!!!
 1) req.(adapter|states).device.emit
    - benötigt ?
    - middleware:

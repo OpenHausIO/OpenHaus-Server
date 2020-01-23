@@ -23,7 +23,7 @@ export interface IRequest extends Express.Request {
 
 //const logger = require("../logger/index.js");
 //const adapter = require("./middleware/adapter.js");
-const interfaces = require("./../interfaces.js");
+const interfaces = require("../interfaces.js");
 //const mwAdapter = adapter(logger.create("adapter"));
 
 const WSSERVER = new Map();
@@ -107,20 +107,27 @@ module.exports = (
             // hanlde websocket upgrade
             // this is the raw communication with the device interface
             wss.handleUpgrade(req, req.socket, req.headers, (ws: WebSocket) => {
-                if (interfaces.has(req.interface._id)) {
+                if (interfaces.has(String(req.interface._id))) {
 
 
-                    let stream = interfaces.get(req.interface._id);
+                    let stream = interfaces.get(String(req.interface._id));
+
+                    log.info("WebSocket connected on '%s'", req.interface._id); //req.interface._id -> stream._id ?! ist schon "stringified"
+
+                    ws.on("message", (data) => {
+                        console.log("device.interfaces.ts, 118 >", data);
+                    });
 
                     stream.attach(ws);
 
                     ws.on("close", () => {
+                        log.info("WebSocket disconnected on '%s'", req.interface._id);
                         stream.detach(ws);
                     });
 
                 } else {
 
-                    log.warn("Interface '%d' in interfae streams not found!", req.interface._id);
+                    log.warn("Interface '%s' in interface streams not found!", req.interface._id);
 
                 }
             });

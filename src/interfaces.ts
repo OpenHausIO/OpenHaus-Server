@@ -10,7 +10,9 @@ const model = mongoose.model("Devices");
 //@ts-ignore
 const log = logger.create("interfaces");
 
-model.find({}).lean().exec((err, devices) => {
+model.find({
+    enabled: true
+}).lean().exec((err, devices) => {
 
     if (err) {
         log.error(err);
@@ -28,7 +30,7 @@ model.find({}).lean().exec((err, devices) => {
             });
 
             Object.assign(duplex, iface);
-            interfaces.set(iface._id, duplex);
+            interfaces.set(String(iface._id), duplex);
 
             //console.log(duplex)
 

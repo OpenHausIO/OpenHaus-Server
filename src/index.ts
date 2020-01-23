@@ -161,6 +161,8 @@ process.nextTick(() => {
     require("./database/index.js");
     require("./interfaces.js");
     require("./adapter.js");
+    require("./endpoint.js");
+
     require("./routes/router.auth.js")(app);
     require("./routes/router.api.js")(app);
     //require("./routes/router.plugins.js")(app);

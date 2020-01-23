@@ -28,10 +28,10 @@ module.exports = (log: winston.Logger) => {
             transform: (data, encoding, cb) => {
 
                 // feedback
-                log.verbose("[encode] called", encoding);
+                log.verbose("[encode] called", data);
 
                 // Add ISCP header if not already present
-                if (data.charAt(0) !== '!') {
+                if (data.charAt(0) !== "!") {
                     data = `!1${data}`;
                 }
 
@@ -59,8 +59,8 @@ module.exports = (log: winston.Logger) => {
         const decode = new Transform({
             transform: (data, encoding, cb) => {
 
-                log.verbose("[decode] called", encoding);
-                cb(null, data.toString('ascii', 18, data.length - 3));
+                log.verbose("[decode] called", data);
+                cb(null, data.toString("ascii", 18, data.length - 3));
 
             }
         });

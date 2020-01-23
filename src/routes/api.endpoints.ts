@@ -2,7 +2,7 @@ import * as Express from "express";
 import { IEndpoint, ICommand } from "../database/model.endpoints";
 //import { ObjectId } from "bson";
 import * as Winston from "winston";
-import * as Joi from "joi";
+//import * as Joi from "joi";
 import { __values } from 'tslib';
 
 
@@ -12,7 +12,7 @@ interface IRequest extends Express.Request {
 }
 
 
-const { adapter } = require("./states.js");
+//const { adapter } = require("./states.js");
 
 
 module.exports = (
@@ -46,6 +46,15 @@ module.exports = (
     });
 
 
+
+    router.post("/:_id/commands/:cmd", (req: IRequest, res) => {
+
+        console.log("Send command")
+
+    });
+
+
+    /*
     router.post("/:_id/commands/:cmd", (req: IRequest, res) => {
         if (adapter.has(req.command.interface.toString())) {
 
@@ -88,7 +97,7 @@ module.exports = (
                                 Object.keys(param.value).reduce((acc, k) => {                        
                                     return schema[param.key][k](param.value[k]);                        
                                 }, schema[param.key]);
-                        */
+                        *
 
                     } else {
 
@@ -143,6 +152,6 @@ module.exports = (
 
         }
     });
-
+*/
 
 };

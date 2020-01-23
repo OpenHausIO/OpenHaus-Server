@@ -1,4 +1,7 @@
 
+// FIXME
+// NOTE file obsulete ?!
+
 module.exports = {
     interfaces: new Map(), // ws sockets
     connector: new Map(),   // ws sockets
