@@ -21,12 +21,12 @@ export interface IRequest extends Express.Request {
 }
 
 
-const logger = require("../logger/index.js");
-const adapter = require("./middleware/adapter.js");
+//const logger = require("../logger/index.js");
+//const adapter = require("./middleware/adapter.js");
+const interfaces = require("./../interfaces.js");
+//const mwAdapter = adapter(logger.create("adapter"));
 
-const mwAdapter = adapter(logger.create("adapter"));
-
-
+const WSSERVER = new Map();
 
 function isWebSocketRequest(req: IRequest) {
 
@@ -42,7 +42,7 @@ function isWebSocketRequest(req: IRequest) {
 }
 
 
-const { interfaces } = require("./states.js");
+//const { interfaces } = require("./states.js");
 
 
 
@@ -81,7 +81,7 @@ module.exports = (
 
 
 
-    router.get("/:_id/interfaces/:iface", mwAdapter, (req: IRequest, res) => {
+    router.get("/:_id/interfaces/:iface", (req: IRequest, res) => {
         if (isWebSocketRequest(req)) {
 
             // req.adapter = adapter handler instance
@@ -89,62 +89,42 @@ module.exports = (
 
             // create server
             // if no one exists for the interface
-            if (!interfaces.has(req.params.iface)) {
+            if (!WSSERVER.has(req.params.iface)) {
 
                 const wss = new WebSocket.Server({
                     noServer: true
                 });
 
-                interfaces.set(req.params.iface, wss);
+                WSSERVER.set(req.params.iface, wss);
 
             }
 
 
             // get websocket server for interface
-            const wss = interfaces.get(req.params.iface);
+            const wss = WSSERVER.get(req.params.iface);
 
 
             // hanlde websocket upgrade
             // this is the raw communication with the device interface
             wss.handleUpgrade(req, req.socket, req.headers, (ws: WebSocket) => {
+                if (interfaces.has(req.interface._id)) {
 
 
-                ws.on("close", () => {
-                    log.warn("Disconnected, %s", req.params.iface);
-                    req.adapter.iface.emit("disconnected", ws);
-                });
+                    let stream = interfaces.get(req.interface._id);
 
+                    stream.attach(ws);
 
-                //NOTE nur eine interface verbindung pro connector!!!!
-                //NOTE HIER SOLLTE KEINE LOOP ENTSTEHEN, DENNOCH NICHT BEST PRACTICE!!!!
-                // adapter -> connector -> device (interface)
-                req.adapter.output.on("data", (data) => {
-                    log.debug("Message to interface (%s)", req.params.iface, data);
-                    ws.send(data);
-                });
+                    ws.on("close", () => {
+                        stream.detach(ws);
+                    });
 
+                } else {
 
-                // data from interface
-                // device (interface) -> connector -> adapter
-                ws.on("message", (data) => {
-                    log.debug("Message from interface (%s)", req.params.iface, data);
-                    req.adapter.input.emit("data", data);
-                });
+                    log.warn("Interface '%d' in interfae streams not found!", req.interface._id);
 
-
-                setImmediate(() => {
-
-                    // feedback
-                    log.info("Connected (%s)", req.params.iface);
-
-                    // emit connection event
-                    wss.emit("connection", ws, req);
-                    req.adapter.iface.emit("connected", ws);
-
-                });
-
-
+                }
             });
+
 
 
         } else {

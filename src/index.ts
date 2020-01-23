@@ -17,11 +17,12 @@ const DEFAULTS = {
     NODE_ENV: "development",
     BCRYPT_SALT_ROUNDS: 10,
     // API settings
-    API_PROTECTED: true,
+    API_PROTECTED: false,
     // Database settings
     DB_NAME: "OpenHaus",
     DB_HOST: "127.0.0.1",
     DB_PORT: 27017,
+    DB_AUTH_ENABLED: false,
     DB_AUTH_USER: "",
     DB_AUTH_PASS: "",
     DB_AUTH_SOURCE: "admin",
@@ -31,7 +32,7 @@ const DEFAULTS = {
     HTTP_PORT: 80,
     HTTP_BACKLOG: 511,
     HTTP_NAME: "open-haus.lan",
-    HTTP_SOCK_ENABLED: true,
+    HTTP_SOCK_ENABLED: false,
     HTTP_SOCK_PATH: "/var/run/open-haus.sock",
     // SMTP Server settings
     SMTP_DEBUG: false,
@@ -158,6 +159,8 @@ process.nextTick(() => {
 
 
     require("./database/index.js");
+    require("./interfaces.js");
+    require("./adapter.js");
     require("./routes/router.auth.js")(app);
     require("./routes/router.api.js")(app);
     //require("./routes/router.plugins.js")(app);

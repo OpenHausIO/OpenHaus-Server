@@ -10,7 +10,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 node_modules/
 jspm_packages/
 dist/
-adapter/
 
 # TypeScript cache
 *.tsbuildinfo

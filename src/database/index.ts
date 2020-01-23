@@ -12,8 +12,8 @@ mongoose.connect(URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: true,
-    user: String(process.env.DB_AUTH_USER),
-    pass: String(process.env.DB_AUTH_PASS),
+    //user: String(process.env.DB_AUTH_USER),
+    //pass: String(process.env.DB_AUTH_PASS),
     connectTimeoutMS: Number(process.env.DB_CONN_TIMEOUT)
 });
 
