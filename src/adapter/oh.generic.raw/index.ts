@@ -1,8 +1,8 @@
 import { PassThrough, Transform } from "stream";
+import winston = require('winston');
 
 
-//@ts-ignore
-module.exports = (log) => {
+module.exports = (log: winston.Logger) => {
 
     // code here gets only executed once:
     // only when the adapter gets initialized!
@@ -21,6 +21,7 @@ module.exports = (log) => {
         // passthrough wrapper
         const transmit = new PassThrough();
         const receive = new PassThrough();
+
 
         // encode data
         const encode = new Transform({
