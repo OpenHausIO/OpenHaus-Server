@@ -35,8 +35,10 @@ function Commander(commands, adapter) {
     this.streams = ((commander) => {
 
 
-        const transmitter = module.exports.transmitter = new PassThrough();
-        const writable = module.exports.receiver = new Writable();
+        //const transmitter = module.exports.transmitter = new PassThrough();
+        //const writable = module.exports.receiver = new Writable();
+        const transmitter = new PassThrough();
+        const writable = new Writable();
 
 
         writable._write = (chunk, encoding, cb) => {

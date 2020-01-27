@@ -2,6 +2,7 @@ import * as mongoose from "mongoose";
 import * as logger from "./logger/index.js";
 import * as adapterInstances from "./adapter";
 import { IEndpoint } from './database/model.endpoints.js';
+import { EventEmitter } from "events";
 
 
 const model = mongoose.model("Endpoints");
@@ -13,12 +14,15 @@ const Commander = require("./commander.js");
 // 
 
 // key = endpoint id
-// values = array of interfaces1
+// values = array of interfaces
 const ENDPOINT_INTERFACES = new Map();
 
 // key = interface id
 // value = commander instance
 const INTERFACE_COMMANDER = new Map();
+
+// for receiving & transmit commands
+const events = new EventEmitter();
 
 
 model.find({
@@ -29,6 +33,9 @@ model.find({
         log.error(err, "could not fetch endpoints");
         process.exit();
     }
+
+    // feedback
+    log.verbose("%d enabled endpoints found", endpoints.length);
 
 
     endpoints.forEach((endpoint: IEndpoint) => {
@@ -51,6 +58,14 @@ model.find({
                 let commander = new Commander(ifaceCmds, adapter);
                 INTERFACE_COMMANDER.set(command.interface, commander);
 
+
+                commander.on("command", (...args: any[]) => {
+                    //this.emit("command")
+                    console.log("<CMD:received>", args, endpoint);
+                    //FIXME apply(<this> = events ?)
+                    events.emit.apply(events, ["command.received", ...args, endpoint]);
+                });
+
             }
         });
 
@@ -59,7 +74,10 @@ model.find({
     });
 
 
-    console.log(ENDPOINT_INTERFACES)
+    console.log("EI", ENDPOINT_INTERFACES);
+    console.log();
+    console.log();
+    console.log("IC", INTERFACE_COMMANDER);
 
 
     /*
@@ -96,4 +114,28 @@ model.find({
 });
 
 
+events.on("command.transmit", (cmd_obj, params) => {
+    if (INTERFACE_COMMANDER.has(cmd_obj.interface)) {
 
+        let commander = INTERFACE_COMMANDER.get(cmd_obj.interface);
+
+        try {
+            // submit command
+            // 1) compile command template
+            // 2) write compiled string to adapter
+            // 3) pipe packet over interface stream (ws) to connector
+            // 4) connector write over transport protocol (tcp/udp) to device interface
+            commander.submit(cmd_obj._id, params);
+        } catch (e) {
+
+            // feedback
+            log.warn("Could not submit command (%d) to device interface", e);
+
+        }
+
+    } else {
+
+        log.warn("No commaner instance found for command/interface %s", cmd_obj.interface);
+
+    }
+});
