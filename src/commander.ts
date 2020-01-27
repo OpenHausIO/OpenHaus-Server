@@ -2,6 +2,8 @@
 // https://gist.github.com/shannonmoeller/b4f6fbab2ffec56213e7
 // https://regexr.com/4riep
 
+// @ts-nocheck
+
 const { EventEmitter } = require("events");
 const util = require("util");
 
@@ -24,9 +26,9 @@ import { PassThrough, Writable } from "stream";
  * Constructur
  * @param {array} commands 
  */
-function Commander(commands, adapters) {
+function Commander(commands, adapter) {
 
-    this.adapters = adapters || [];
+    this.adapter = adapter;
     this.commands = commands || [];
     EventEmitter.call(this);
 
@@ -51,6 +53,15 @@ function Commander(commands, adapters) {
         };
 
     })(this);
+
+    adapter.on("readable", () => {
+        this.parse(adapter.read(), (cmd_obj, params) => {
+
+            console.log("from device", cmd_obj, params);
+            this.emit("command", cmd_obj, params);
+
+        });
+    });
 
 }
 
@@ -143,7 +154,16 @@ Commander.prototype.submit = function submit(id, params) {
     });
 
     const payload = this.compile(cmd.template, params);
-    this.streams.transmitter.write(payload);
+    //this.streams.transmitter.write(payload);
+
+    //let adapter = this.adapters.get(cmd.adapter);
+
+    if (!adapter) {
+        //throw new Error("NO_ADAPTER_INSTANCE_FOUND");
+    }
+
+    // write to adapter
+    this.adapter.transmit.write(payload);
 
     return payload;
 

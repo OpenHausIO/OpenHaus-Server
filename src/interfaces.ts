@@ -15,7 +15,7 @@ model.find({
 }).lean().exec((err, devices) => {
 
     if (err) {
-        log.error(err);
+        log.error(err, "Could not fetch database for interfaces: %s", err.message);
         process.exit();
     }
 

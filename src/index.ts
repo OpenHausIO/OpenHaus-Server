@@ -10,7 +10,7 @@ const pkg = require(`${__dirname}/package.json`);
 const DEFAULTS = {
     // General settings
     //@ts-ignore
-    DEBUG: null,
+    DEBUG: null, //FIXME should be a string = ""
     LOG_LEVEL: "info",
     UUID: uuid(),
     RSA_KEYGEN_BITS: 2048,
@@ -26,7 +26,7 @@ const DEFAULTS = {
     DB_AUTH_USER: "",
     DB_AUTH_PASS: "",
     DB_AUTH_SOURCE: "admin",
-    DB_CONN_TIMEOUT: 5000,
+    DB_CONN_TIMEOUT: 5000, //FIXME not working
     // HTTP Server settings
     HTTP_HOST: "0.0.0.0",
     HTTP_PORT: 80,
@@ -63,7 +63,7 @@ if (process.env.NODE_ENV !== "production") {
     // read&parse .env file
     const dot = require("dotenv").config({
         path: `${__dirname}/../.env`,
-        debug: process.env.DEBUG
+        debug: process.env //FIXME debug = what ? boolean or string ?!
     });
 
     // override existing env vars
@@ -82,9 +82,9 @@ const logger = require("./logger/index.js");
 const log = logger.create("webserver");
 
 
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV === "development" && process.env.DEBUG === "OpenHaus") {
     Object.keys(DEFAULTS).forEach((k) => {
-        //logger.verbose("%s = %s", k, process.env[k]);
+        logger.verbose("[ENV] %s = %s", k, process.env[k]);
     });
 }
 
@@ -111,7 +111,8 @@ if (!pkg.uuid) {
 
 }
 
-
+//TODO should we only check when the api is protected ?
+//NOTE API is always protected ?! -> process.env.API_PROTECTED
 // check if we have a keypair for signing JWT tokens
 fs.access(`${__dirname}/private-key.pem`, fs.constants.F_OK, (err) => {
     if (err) {
