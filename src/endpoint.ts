@@ -42,17 +42,18 @@ model.find({
 
         let interfaces: Array<String> = [];
 
-        endpoint.commands.forEach((command) => {
-            //@ts-ignore
-            if (!interfaces.includes(command.interface)) {
-                //@ts-ignore
-                interfaces.push(command.interface);
+        endpoint.commands.forEach((command) => {            //@ts-ignore
+            if (!interfaces.includes(String(command.interface))) {
+
+                //NOTE .toString() vs String(...) ?!
+                interfaces.push(command.interface.toString());
 
                 // filter only commands for interface xxx
                 let ifaceCmds = endpoint.commands.filter((e) => {
                     e.interface === command.interface;
                 });
 
+                //FIXME ts error, adapterInstances.get not recognized
                 //@ts-ignore
                 let adapter = adapterInstances.get(command.interface);
                 let commander = new Commander(ifaceCmds, adapter);

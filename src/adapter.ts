@@ -109,5 +109,6 @@ model.find({}).lean().exec((err, adapters) => {
 
 });
 
+export { adapterInstances };
 
 module.exports = adapterInstances;
