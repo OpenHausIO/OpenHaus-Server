@@ -27,6 +27,11 @@ module.exports = (log: winston.Logger) => {
         const encode = new Transform({
             transform: (data, encoding, cb) => {
 
+
+                console.log(data.toString())
+                log.verbose("Data type: %s", typeof data);
+                data = String(data);
+
                 // feedback
                 log.verbose("[encode] called", data);
 
@@ -59,6 +64,7 @@ module.exports = (log: winston.Logger) => {
         const decode = new Transform({
             transform: (data, encoding, cb) => {
 
+                data = String(data);
                 log.verbose("[decode] called", data);
                 cb(null, data.toString("ascii", 18, data.length - 3));
 

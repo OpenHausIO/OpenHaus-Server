@@ -162,11 +162,20 @@ process.nextTick(() => {
     require("./database/index.js");
     require("./interfaces.js");
     require("./adapter.js");
-    require("./endpoint.js");
 
-    require("./routes/router.auth.js")(app);
-    require("./routes/router.api.js")(app);
-    //require("./routes/router.plugins.js")(app);
+    setTimeout(() => {
+        require("./endpoint.js");
+    }, 500);
+
+
+
+    setTimeout(() => {
+        //  log.warn("Require API routes");
+        require("./routes/router.auth.js")(app);
+        require("./routes/router.api.js")(app);
+        //require("./routes/router.plugins.js")(app);
+    }, 1000);
+
 
 
     setImmediate(() => {

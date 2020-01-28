@@ -75,7 +75,7 @@ model.find({}).lean().exec((err, adapters) => {
 
                         // create adapter instance for interface
                         let instance = factory(iface);
-                        adapterInstances.set(iface._id, instance);
+                        adapterInstances.set(String(iface._id), instance);
 
 
 
@@ -109,6 +109,12 @@ model.find({}).lean().exec((err, adapters) => {
 
 });
 
-export { adapterInstances };
+//export { adapterInstances };
+
+/*
+setInterval(() => {
+    console.log(adapterInstances);
+}, 1000)
+*/
 
 module.exports = adapterInstances;

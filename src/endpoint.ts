@@ -1,7 +1,7 @@
 import * as mongoose from "mongoose";
 import * as logger from "./logger/index.js";
 import * as adapterInstances from "./adapter";
-import { IEndpoint } from './database/model.endpoints.js';
+import { IEndpoint, ICommand } from './database/model.endpoints.js';
 import { EventEmitter } from "events";
 
 
@@ -24,9 +24,18 @@ const INTERFACE_COMMANDER = new Map();
 // for receiving & transmit commands
 const events = new EventEmitter();
 
+//setTimeout(() => {
+
+//5d8cf6d58cee5013f5971fbe
+//console.log("init endpoints", adapterInstances.has("5d8cf6d58cee5013f5971fbe"), adapterInstances)
+
+
+
+
 
 model.find({
     //TODO: enabled = true?
+    //enabled: true
 }).lean().exec((err, endpoints) => {
 
     if (err) {
@@ -35,29 +44,46 @@ model.find({
     }
 
     // feedback
-    log.verbose("%d enabled endpoints found", endpoints.length);
+    log.verbose("%d enabled endpoints fetched from database", endpoints.length);
 
 
     endpoints.forEach((endpoint: IEndpoint) => {
 
         let interfaces: Array<String> = [];
 
-        endpoint.commands.forEach((command) => {            //@ts-ignore
+        endpoint.commands.forEach((command: ICommand) => {
+
             if (!interfaces.includes(String(command.interface))) {
-
-                //NOTE .toString() vs String(...) ?!
                 interfaces.push(command.interface.toString());
+            }
 
-                // filter only commands for interface xxx
-                let ifaceCmds = endpoint.commands.filter((e) => {
-                    e.interface === command.interface;
-                });
+            ENDPOINT_INTERFACES.set(String(endpoint._id), interfaces);
 
-                //FIXME ts error, adapterInstances.get not recognized
+        });
+
+
+
+        interfaces.forEach((id) => {
+
+            //console.log("iface:", id, endpoint.commands);
+
+
+            let ifaceCmds = endpoint.commands.filter((cmd: ICommand) => {
+                return String(cmd.interface) === String(id);
+            });
+
+
+            //FIXME ts error, adapterInstances.get not recognized
+            //@ts-ignore
+            if (adapterInstances.has(String(id))) {
+
                 //@ts-ignore
-                let adapter = adapterInstances.get(command.interface);
+                let adapter = adapterInstances.get(String(id));
+
+
                 let commander = new Commander(ifaceCmds, adapter);
-                INTERFACE_COMMANDER.set(command.interface, commander);
+                //console.log("set", id)
+                INTERFACE_COMMANDER.set(id, commander);
 
 
                 commander.on("command", (...args: any[]) => {
@@ -67,76 +93,98 @@ model.find({
                     events.emit.apply(events, ["command.received", ...args, endpoint]);
                 });
 
+
+            } else {
+
+                //console.log(adapterInstances)
+                log.warn("Could not find adapter for interface id %s, could not create endpoint commander instance!", id);
+
             }
+
+
         });
 
-        ENDPOINT_INTERFACES.set(String(endpoint._id), interfaces);
+
+
 
     });
 
-
-    console.log("EI", ENDPOINT_INTERFACES);
-    console.log();
-    console.log();
-    console.log("IC", INTERFACE_COMMANDER);
-
-
-    /*
-    let commands = {};
-
-
-    endpoints.forEach((endpoint: IEndpoint) => {
-
-        // filter commands by interface
-        endpoint.commands.forEach((command: ICommand) => {
-
-            //@ts-ignore
-            if (!commands[command.adapter]) {
-                //@ts-ignore
-                commands[command.adapter] = [];
-            }
-
-            //@ts-ignore
-            commands[command.adapter].push(command);
-
-        });
-
-        Object.keys(commands).forEach((k) => {
-            //@ts-ignore
-            let adapter = adapterInstances.get(k);
-            //@ts-ignore
-            let commander = new Commander(commands[k], adapter);
-        });
-
-
-    });
-*/
 
 });
 
-
 events.on("command.transmit", (cmd_obj, params) => {
-    if (INTERFACE_COMMANDER.has(cmd_obj.interface)) {
+    console.log("-----------------------");
+    console.log();
+    console.log("Now we should send", cmd_obj, params)
+    if (INTERFACE_COMMANDER.has(String(cmd_obj.interface))) {
 
-        let commander = INTERFACE_COMMANDER.get(cmd_obj.interface);
+        let commander = INTERFACE_COMMANDER.get(String(cmd_obj.interface));
 
         try {
+
+            console.log()
+
             // submit command
             // 1) compile command template
             // 2) write compiled string to adapter
-            // 3) pipe packet over interface stream (ws) to connector
-            // 4) connector write over transport protocol (tcp/udp) to device interface
-            commander.submit(cmd_obj._id, params);
+            // 3) pipe chunk over interface stream (ws) to connector
+            // 4) connector write chunk over transport protocol (tcp/udp) to device interface
+            commander.submit(String(cmd_obj._id), params || []);
+
         } catch (e) {
 
             // feedback
-            log.warn("Could not submit command (%d) to device interface", e);
+            log.warn("Could not submit command (%s) to device interface", cmd_obj._id, e);
+            console.log(e);
 
         }
 
     } else {
 
-        log.warn("No commaner instance found for command/interface %s", cmd_obj.interface);
+        log.warn("No commaneder instance found for command/interface %s", cmd_obj.interface);
 
     }
 });
+
+/*
+{
+       "_id": "5e29f245a2941b04ad70d29b",
+        "name": "AV Receiver",
+        "room": "5d6412470870c639f0f88b86",
+        "icon": "fa fa-loudspeaker",
+        "commands": [{
+            "enabled": true,
+            "_id":
+                "5e29f245a2941b04ad70d29d",
+            "name": "Power Ein", "payload": "PWR01", "interface": "5d8cf6d58cee5013f5971fbe", "params": []
+        }, {
+            "        enabled": true,
+            "_id": "5e29f245a2941b04ad70d29c",
+            "name": "Power Aus",
+            "payload": "PWR00",
+            "interface":
+                "5d8cf6d58cee5013f5971fbe",
+            "params": []
+        }],
+        "__v": 0
+    }
+*/
+
+/*
+setInterval(() => {
+
+    events.emit("command.transmit", {
+        "enabled": true,
+        "_id": "5e29f245a2941b04ad70d29d",
+        "name": "Power Ein",
+        "payload": "PWR01",
+        "interface": "5d8cf6d58cee5013f5971fbe",
+        "params": []
+    });
+
+}, 5000);
+*/
+
+//}, 1000);
+
+module.exports = events; 

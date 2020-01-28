@@ -115,7 +115,8 @@ module.exports = (
                     log.info("WebSocket connected on '%s'", req.interface._id); //req.interface._id -> stream._id ?! ist schon "stringified"
 
                     ws.on("message", (data) => {
-                        console.log("device.interfaces.ts, 118 >", data);
+                        //TODO remove, for debugging only!!!
+                        //console.log("device.interfaces.ts, 118 >", data);
                     });
 
                     stream.attach(ws);
