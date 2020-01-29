@@ -4,11 +4,18 @@
 
 
 
-const { EventEmitter } = require("events");
+//const { EventEmitter } = require("events");
 const util = require("util");
 
 import { PassThrough, Writable } from "stream";
 import { ICommand } from './database/model.endpoints';
+import { EventEmitter } from 'events';
+
+export interface ICommander extends EventEmitter {
+    compile: Function,
+    submit: Function,
+    parse: Function
+}
 
 /*
 
@@ -32,7 +39,8 @@ import { ICommand } from './database/model.endpoints';
 
 /**
  * Constructur
- * @param {array} commands 
+ * @param {array} commands Command array for interface
+ * @param {object} adapter Adapter instance of interface
  */
 function Commander(commands: ICommand, adapter: any) {
 
