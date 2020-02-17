@@ -30,6 +30,7 @@ export interface IDevice extends mongoose.Document {
     icon: String,
     room?: ObjectId,
     adapter?: ObjectId,
+    enabled: Boolean,
     meta?: {
         manufacturer?: String,
         model?: String,
@@ -55,7 +56,12 @@ const ENUM_SETTINGS = {
         host: Joi.string().required(),
         port: Joi.number().required(),
         path: Joi.string().default("/"),
-        protocol: Joi.string().required().valid(["ws", "http", "tcp", "udp"])
+        protocol: Joi.string().required().valid([
+            "ws", "wss",
+            "http", "https",
+            "tcp", // add rtsp ?!
+            "udp"
+        ])
     })
 };
 

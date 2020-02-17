@@ -12,8 +12,8 @@ mongoose.connect(URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: true,
-    //user: String(process.env.DB_AUTH_USER),
-    //pass: String(process.env.DB_AUTH_PASS),
+    user: String(process.env.DB_AUTH_USER),
+    pass: String(process.env.DB_AUTH_PASS),
     connectTimeoutMS: Number(process.env.DB_CONN_TIMEOUT)
 });
 
@@ -29,6 +29,8 @@ mongoose.connection.on("error", (err) => {
 
 
 /*
+// problem mit irgnedwas kann nicht gesetzt werden
+// glaube auf nested schema
 mongoose.plugin(function (
     schema: mongoose.Schema,
     options: Object
@@ -83,3 +85,4 @@ require("./model.endpoints.js");
 require("./model.rooms.js");
 require("./model.adapter.js");
 require("./model.scenes.js");
+require("./model.plugins.js");

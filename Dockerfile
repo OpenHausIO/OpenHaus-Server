@@ -9,7 +9,7 @@ ENV NODE_ENV=${NODE_ENV}
 RUN apk --no-cache add python make g++
 
 COPY ./package*.json ./
-RUN npm install
+RUN npm install --production
 
 
 # ------------------------------------
@@ -25,7 +25,7 @@ RUN apk --no-cache add openssl
 COPY ./dist ./
 COPY ./package.json ./
 
-ENV HTTP_PORT=8080
+# ENV HTTP_PORT=8080
 ENV NODE_ENV=production
 # ENV DB_HOST=10.0.0.1
 

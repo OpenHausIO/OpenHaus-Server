@@ -28,6 +28,10 @@ const schema = new mongoose.Schema({
     number: {
         type: Number,
         //required: true
+    },
+    enabled: {
+        type: Boolean,
+        default: true
     }
 });
 

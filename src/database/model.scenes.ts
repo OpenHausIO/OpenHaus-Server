@@ -45,6 +45,10 @@ const schema = new mongoose.Schema({
                 default: (1000 * 60) * 60 * 24 * 7 // 1 week (604800000)
             }
         }
+    },
+    enabled: {
+        type: Boolean,
+        default: true
     }
 });
 

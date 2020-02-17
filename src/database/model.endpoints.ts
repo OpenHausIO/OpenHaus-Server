@@ -78,6 +78,11 @@ const schema = new mongoose.Schema({
         type: String,
         required: true
     },
+    device: {
+        type: ObjectId,
+        required: true,
+        ref: "Devices"
+    },
     room: {
         type: ObjectId,
         required: true,
