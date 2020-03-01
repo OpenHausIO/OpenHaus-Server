@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import * as logger from "../../logger";
 import * as mongoose from 'mongoose';
 import { IUser } from '../../database/model.users';
+import Hooks = require("../../system/hooks");
 
 const model = mongoose.model("Users");
 
@@ -9,41 +10,44 @@ const model = mongoose.model("Users");
 const log = logger.create("users");
 const events = new EventEmitter();
 
+//@ts-ignore
+const hooks = new Hooks();
 
-const USERS = new Map();
 
+const USERS = new Map(); // -> array ?!
 
-module.exports = Object.assign(events, {
-    isReady: false,
+//@ts-ignore
+const COMPONENT = {
+    ready: false,
     factory,
-    USERS
+    hooks,
+    events,
+    // refresh method here ?!
+    // würde sinn machen
+    // siehe Object.assign
+};
+
+
+// add component methods
+Object.assign(COMPONENT, {
+    // init?!
 });
 
 
-function UserComponent() {
-
+// export component
+module.exports = {
+    USERS,
+    //refresh, -> ist eigentlich nicht component typisch wie: ready, factory, hooks & events...
+    __proto__: COMPONENT,
+    prototype: COMPONENT
 };
 
-//NOTE handle CRUD trough "rest-handler" ?!
 
-UserComponent.prototype.add = function () {
-
-};
-
-UserComponent.prototype.update = function () {
-
-};
-
-UserComponent.prototype.remove = function () {
-
-};
-
-UserComponent.prototype.get = function () {
-
-};
 
 
 function factory() {
+
+    log.warn("!!! TO IMPLEMENT !!!");
 
     USERS.clear();
 
@@ -63,15 +67,10 @@ function factory() {
             USERS.set(String(user._id), user);
         });
 
-        module.exports.isReady = true;
+        COMPONENT.ready = true;
         events.emit("ready");
 
     });
-
-
-    //@ts-ignore
-    module.exports.instance = new UserComponent();
-
 
 }
 

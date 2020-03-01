@@ -37,3 +37,4 @@ Middleware.prototype.start = function (...args: Array<any>) {
 
 
 module.exports = Middleware;
+export default Middleware;

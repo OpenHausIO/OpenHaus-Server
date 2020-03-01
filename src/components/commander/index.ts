@@ -39,9 +39,13 @@ function factory() {
     log.verbose("factory called");
     log.info("Component ready");
 
-    // we are ready
-    COMPONENT.ready = true;
-    events.emit("ready");
+
+
+    process.nextTick(() => {
+        // we are ready
+        COMPONENT.ready = true;
+        events.emit("ready");
+    });
 
 }
 

@@ -1,6 +1,6 @@
 const assert = require("assert");
 
-describe('Devices', function () {
+describe('Interfaces', function () {
 
     describe('- Add', function () {
         it('should return -1 when the value is not present', function () {

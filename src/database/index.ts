@@ -1,23 +1,25 @@
 import * as mongoose from "mongoose";
-const logger = require("../logger/index.js");
+import logger = require("../logger");
+//@ts-ignore
 const log = logger.create("database");
 
 // build uri with environment variables
 const URI = `mongodb://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=${process.env.DB_AUTH_SOURCE}`;
 
-//NOTE set as options ?!
-mongoose.set("useCreateIndex", true);
 
 mongoose.connect(URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: true,
+    useCreateIndex: true,
     user: String(process.env.DB_AUTH_USER),
     pass: String(process.env.DB_AUTH_PASS),
     connectTimeoutMS: Number(process.env.DB_CONN_TIMEOUT)
 });
 
 mongoose.connection.on("open", () => {
+    //@ts-ignore
+    mongoose.connected = true;
     log.info("Connected to database %s", URI);
 });
 
@@ -78,11 +80,14 @@ mongoose.plugin(function (
 
 
 
-require("./model.users.js");
-require("./model.tokens.js");
-require("./model.devices.js");
-require("./model.endpoints.js");
-require("./model.rooms.js");
-require("./model.adapter.js");
-require("./model.scenes.js");
-require("./model.plugins.js");
+require("./model.users");
+require("./model.tokens");
+require("./model.devices");
+require("./model.endpoints");
+require("./model.rooms");
+require("./model.adapter");
+require("./model.scenes");
+require("./model.plugins");
+//require("./model.credentials");
+
+module.exports = mongoose.connection;

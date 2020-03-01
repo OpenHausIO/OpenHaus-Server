@@ -25,6 +25,7 @@ export interface CEndpoints extends EventEmitter {
 
 
 const model = mongoose.model("Endpoints");
+
 //@ts-ignore
 const hooks = new Hooks();
 
@@ -69,6 +70,8 @@ module.exports = {
     __proto__: COMPONENT,
     prototype: COMPONENT
 };
+
+export default module.exports;
 
 
 
@@ -125,7 +128,9 @@ function remove(_id, cb) {
     }
 
     // callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -182,7 +187,9 @@ function update(_id, data, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -211,7 +218,9 @@ function disable(_id, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 
 }
@@ -241,7 +250,9 @@ function enable(_id, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 
 }
@@ -356,7 +367,7 @@ function refresh(cb) {
                 });
 
 
-                events.emit("refreshed");
+                events.emit("refreshed", docs);
                 resolve(docs);
 
             });
@@ -369,7 +380,9 @@ function refresh(cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -427,7 +440,9 @@ function fetch(filter, lean, cb) {
     }
 
     // callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -476,7 +491,9 @@ function add(data, cb) {
     }
 
     // callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -530,7 +547,9 @@ function command(cmd_obj, params, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -581,8 +600,6 @@ function factory() {
 
             });
 
-
-
             interfaces.forEach((id) => {
 
                 //console.log("iface:", id, endpoint.commands);
@@ -593,6 +610,7 @@ function factory() {
                 });
 
                 //console.log(typeof id)
+                // ifaceCmds.any((cmd) => { return cmd.tepmlate || false })
 
                 //FIXME ts error, ADAPTER_INSTANCES.get not recognized
                 //@ts-ignore

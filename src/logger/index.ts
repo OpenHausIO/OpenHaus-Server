@@ -7,6 +7,7 @@ import * as dateFormat from "dateformat";
 // TODO: https://github.com/winstonjs/winston#working-with-multiple-loggers-in-winston
 // https://github.com/winstonjs/winston/issues/1498
 // https://github.com/winstonjs/winston/issues/1338
+// TODO implement LOG_TRANSPORT
 
 const LEVELS = {
     levels: {
@@ -71,7 +72,7 @@ const logger = winston.createLogger({
                 winston.format.splat(),
                 winston.format.json()
             ),
-            filename: path.resolve(__dirname, "../log/OpenHaus.log")
+            filename: path.resolve(process.env.LOG_PATH, "OpenHaus.log")
         })
     ]
 });
@@ -84,7 +85,7 @@ if (process.env.NODE_ENV !== "production") {
     logger.exitOnError = true;
     let message = "Demo logging message :)";
 
-    if (process.env.LOG_COMPONENT === "logger") {
+    if (process.env.LOG_TARGET === "logger") {
         console.log();
         logger.verbose(message);
         logger.debug(message);
@@ -114,20 +115,27 @@ logger.create = (name: string) => {
                     winston.format.splat(),
                     winston.format.json()
                 ),
-                filename: path.resolve(__dirname, `../log/${name}.log`)
+                filename: path.resolve(process.env.LOG_PATH, `${name}.log`)
             })
         ]
     };
 
 
-    if (process.env.LOG_COMPONENT) {
-        if (process.env.LOG_COMPONENT === name) {
+    if (process.env.LOG_TARGET) {
+        if (process.env.LOG_TARGET === name) {
             options.silent = false;
         } else {
             options.silent = true;
         }
     } else {
         options.silent = false;
+    }
+
+
+    // supress all logger messages
+    // eg for unit tests
+    if (process.env.LOG_SUPPRESS === "true") {
+        options.silent = true;
     }
 
 

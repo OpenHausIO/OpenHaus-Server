@@ -3,10 +3,8 @@ import * as mongoose from "mongoose";
 import * as logger from "../../logger/index.js";
 import Hooks = require("../../system/hooks");
 import { IPlugin } from '../../database/model.plugins.js';
-import tar = require("tar");
-import { Readable } from 'stream';
-import path = require("path");
-import * as fs from 'fs';
+
+
 
 //@ts-ignore
 const log = logger.create("plugins");
@@ -70,62 +68,7 @@ function install(obj, cb) {
 
             if (!err && doc) {
 
-                // document create in database
-                // extract tarball buffer in 
-                // to filesystem object
 
-                if (obj.tarball) {
-
-                    // create path to plugin
-                    let pluginPath = path.resolve(__dirname, "../../plugins", obj.alias);
-
-                    // create foder under .../plugins
-                    fs.mkdir(pluginPath, (err) => {
-
-                        if (err) {
-
-                            if (err.code === "EEXIST") {
-                                log.warn("Folder allready exists, skip further steps...");
-                            }
-
-                            log.error(err, "Could not create plugin folder", err.message);
-
-                            reject();
-                            return;
-
-                        }
-
-
-                        // extract tarball buffer
-                        // create readable stream from buffer
-                        let stream = new Readable();
-                        stream.push(obj.tarball);
-                        stream._read = () => { };
-
-                        let transform = tar.x({
-                            strip: 1,
-                            C: pluginPath
-                        });
-
-                        stream.pipe(transform).on("end", () => {
-
-                            // feedback
-                            log.info("Plugin %s installed to %s", obj.name, obj.alias);
-
-                            resolve(doc);
-
-                        }).on("error", (err) => {
-
-                            // feedback
-                            log.error(err, "Could not extract tarball buffer: %s", err.message);
-
-                            reject(err);
-
-                        });
-
-                    });
-
-                }
 
 
             } else {
@@ -253,7 +196,10 @@ function factory() {
             // all plugins loaded
             // component ready!
             COMPONENT.ready = true;
-            events.emit("ready");
+
+            process.nextTick(() => {
+                events.emit("ready");
+            });
 
         });
 

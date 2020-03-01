@@ -33,9 +33,9 @@ server.on("listening", () => {
 
 
     log.info("Require API routes");
-    console.log("-- API ROUTES NOT REQUIRED!!!!!!!!!!!!")
+    console.log("-- API ROUTES NOT REQUIRED!!!!!!!!!!!!");
     //require("../../routes/router.auth.js")(app);
-    // require("../../routes/router.api.js")(app);
+    // require("../../!routes/router.api.js")(app);
     //require("../../routes/router.plugins.js")(app);
 
 

@@ -1,3 +1,4 @@
+/*
 import * as Express from "express";
 import { json } from "body-parser";
 import { model } from "mongoose";
@@ -44,3 +45,4 @@ routerUsers.use((req, res: IResponse) => {
 
 
 api.use("/users", routerUsers);
+*/

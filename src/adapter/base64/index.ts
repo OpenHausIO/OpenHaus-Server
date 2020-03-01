@@ -11,10 +11,6 @@ module.exports = (log: winston.Logger) => {
     // create here a event emitter!
     //
     // change plain to raw?!!?!?
-    // - better for binary ?
-    // - plain = text
-    // - binary = raw
-    // but same shit....
     log.debug("Adapter singleton init called!");
 
     //@ts-ignore
@@ -34,7 +30,7 @@ module.exports = (log: winston.Logger) => {
             transform: (chunk, encoding, cb) => {
 
                 log.verbose("[encode] called", encoding);
-                cb(null, chunk);
+                cb(null, new Buffer(chunk).toString("base64"));
 
             }
         });
@@ -45,7 +41,7 @@ module.exports = (log: winston.Logger) => {
             transform: (chunk, encoding, cb) => {
 
                 log.verbose("[decode] called", encoding);
-                cb(null, chunk);
+                cb(null, new Buffer(chunk).toString("utf8"));
 
             }
         });

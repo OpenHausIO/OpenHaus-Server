@@ -1,9 +1,10 @@
+//import path = require("path");
 import { EventEmitter } from "events";
 import mongoose = require("mongoose");
-import logger = require("../../logger/index.js");
-import { IDevice } from "../../database/model.devices.js";
+//@ts-ignore
+import logger = require("../../logger"); //`${__dirname}/../../logger/index.js`
+import { IDevice } from "../../database/model.devices";
 import Hooks = require("../../system/hooks");
-
 
 /**
  * @module devices
@@ -50,7 +51,7 @@ module.exports = {
     update,
     fetch,
     remove,
-    //refresh,
+    //refresh, -> ist eigentlich nicht component typisch wie: ready, factory, hooks & events...
     __proto__: COMPONENT,
     prototype: COMPONENT
 };
@@ -198,7 +199,9 @@ function remove(_id, cb) {
     }
 
     // callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -255,7 +258,9 @@ function update(_id, data, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -298,7 +303,9 @@ function disable(_id, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 
 }
@@ -340,7 +347,9 @@ function enable(_id, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 
 }
@@ -394,7 +403,9 @@ function refresh(cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -452,7 +463,9 @@ function fetch(filter, lean, cb) {
     }
 
     // callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -511,7 +524,9 @@ function add(data, cb) {
     }
 
     // callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -521,8 +536,6 @@ function add(data, cb) {
  * Component factory
  */
 function factory() {
-    //hooks.emit("factory", () => {
-    COMPONENT.ready = false;
 
     // cleanup
     DEVICES.splice(0, DEVICES.length);
@@ -547,8 +560,20 @@ function factory() {
 
     });
 
-    //});
 }
 
-// init
+/*
+if (process.env.IGNORE_COMPONENTS.split(",").includes("devices")) {
+
+    // feedback
+    log.warn("Component ignored");
+
+} else {
+
+    // init
+    factory();
+
+}
+*/
+
 factory();

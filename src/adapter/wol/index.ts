@@ -4,18 +4,10 @@ import winston = require('winston');
 
 module.exports = (log: winston.Logger) => {
 
-    // code here gets only executed once:
-    // only when the adapter gets initialized!
-    // 
-    // if you need to communicate between interfaces in your adapter,
-    // create here a event emitter!
-    //
-    // change plain to raw?!!?!?
-    // - better for binary ?
-    // - plain = text
-    // - binary = raw
-    // but same shit....
-    log.debug("Adapter singleton init called!");
+    // magic packet constants
+    const MAC_REPEAT = 16;
+    const MAC_LENGTH = 0x06;
+    const PACKET_HEADER = 0x06;
 
     //@ts-ignore
     return (upstream) => {
@@ -31,10 +23,26 @@ module.exports = (log: winston.Logger) => {
 
         // encode data
         const encode = new Transform({
-            transform: (chunk, encoding, cb) => {
+            transform: (mac, encoding, cb) => {
 
+                const parts = mac.match(/[0-9a-fA-F]{2}/g);
+
+                if (!parts || parts.length !== MAC_LENGTH) {
+                    cb(new Error(`malformed MAC address "${mac}"`));
+                }
+
+                let buffer = Buffer.alloc(PACKET_HEADER);
+                let bufMac = Buffer.from(parts.map(p => parseInt(p, 16)));
+                buffer.fill(0xff);
+
+                for (var i = 0; i < MAC_REPEAT; i++) {
+                    buffer = Buffer.concat([buffer, bufMac]);
+                }
+
+                // feedback
                 log.verbose("[encode] called", encoding);
-                cb(null, chunk);
+
+                cb(null, mac);
 
             }
         });
@@ -43,6 +51,10 @@ module.exports = (log: winston.Logger) => {
         // decode data
         const decode = new Transform({
             transform: (chunk, encoding, cb) => {
+
+                //TODO implement decode
+                // so we can detect when devices are
+                // triggerd to wake (detects when device should power on)
 
                 log.verbose("[decode] called", encoding);
                 cb(null, chunk);

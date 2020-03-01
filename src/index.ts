@@ -1,82 +1,87 @@
-import * as uuid from "uuid/v4";
 import * as fs from "fs";
 const pkg = require(`${__dirname}/package.json`);
+import Hooks = require("./system/hooks");
+import mongoose = require("mongoose");
+//import { EventEmitter } from "events";
+//@ts-ignore
+const hooks = new Hooks();
+//const events = new EventEmitter();
 
-//require("./test");
 
-const ENVIRONMENT = {
-    // General settings
-    //@ts-ignore
-    DEBUG: null, //FIXME should be a string = ""
-    LOG_LEVEL: "verbose",
-    LOG_COMPONENT: "", // rename -> LOG_TARGET ?!
-    UUID: uuid(),
-    RSA_KEYGEN_BITS: 2048,
-    NODE_ENV: "development", //FIXME set to production ?!
-    BCRYPT_SALT_ROUNDS: 10,
-    SECURE_START: "false",
-    CLEAR_SCREEN: "true",
-    // API settings
-    API_PROTECTED: false,
-    // Database settings
-    DB_NAME: "OpenHaus",
-    DB_HOST: "127.0.0.1",
-    DB_PORT: 27017,
-    DB_AUTH_ENABLED: false,
-    DB_AUTH_USER: "",
-    DB_AUTH_PASS: "",
-    DB_AUTH_SOURCE: "admin",
-    DB_CONN_TIMEOUT: 5000, //FIXME not working
-    // HTTP Server settings
-    HTTP_HOST: "0.0.0.0",
-    HTTP_PORT: 3000,
-    //HTTP_BACKLOG: 511,
-    HTTP_NAME: "open-haus.lan",
-    HTTP_SOCK_ENABLED: false,
-    HTTP_SOCK_PATH: "/var/run/open-haus.sock",
-    // SMTP Server settings
-    SMTP_DEBUG: false,
-    //@ts-ignore
-    SMTP_HOST: "localhost",
-    SMTP_PORT: 587,
-    SMTP_SECURE: true,
-    SMTP_AUTH_USER: "",
-    SMTP_AUTH_PASS: "",
-    SMTP_CLIENT_NAME: "OpenHaus"
-};
+
+
+// override process:
+// - .kill?
+// - .exit?
+
+// change exit codes
+// 1000 & above
+// https://nodejs.org/dist/latest-v12.x/docs/api/process.html#process_exit_codes
 
 
 // init message
 console.log("Starting OpenHaus...");
 
-// external config params
-process.env = Object.assign(ENVIRONMENT, process.env);
+
+// environment & settings 
+require("./environment");
+require("./global-settings");
 
 
-if (process.env.NODE_ENV !== "production") {
-
-    // NOTE should we keep dotenv as dependencie?
-    // > move up to process.env = Object.assign(..., dot.parsed);
-    // > adjust path if moved/integrated
-
-    // read&parse .env file
-    const dot = require("dotenv").config({
-        path: `${__dirname}/../.env`,
-        debug: process.env.DEBUG //FIXME debug = what ? boolean or string ?!
-    });
-
-    // override existing env vars
-    Object.assign(process.env, dot.parsed);
-
-    if (process.env.CLEAR_SCREEN === "true") {
-        require("clear")();
-    }
-
+// clear terminal
+if (process.env.CLEAR_SCREEN === "true") {
+    require("clear")();
 }
 
 
 //import * as logger from "./logger";
 import logger = require("./logger");
+
+
+if (process.env.LOG_COMPONENT) {
+    //@ts-ignore
+    logger.warn("Log target set to: '%s'", process.env.LOG_COMPONENT);
+}
+
+/*
+//TODO info not really helpful
+// err & origin empty
+//@ts-ignore
+process.on("uncaughtException", (err, origin) => {
+    if (process.env.CRASH_REPORT === "enabled") {
+        hooks.emit("crash_report", "uncaughtException", {
+            err,
+            origin
+        }, (event, data, next) => {
+
+            // call home
+            // TODO implement call home: CRASH_REPORT
+
+            next();
+
+        });
+    }
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+    if (process.env.CRASH_REPORT === "enabled") {
+        hooks.emit("crash_report", "unhandledRejection", {
+            reason,
+            promise
+        }, (event, data, next) => {
+
+            // call home
+            // TODO implement call home: CRASH_REPORT
+
+            next();
+
+        });
+    }
+});
+
+*/
+
+
 
 // secure start info
 (() => {
@@ -88,6 +93,7 @@ import logger = require("./logger");
         console.log();
     }
 })();
+
 
 if (!pkg.uuid) {
     try {
@@ -116,11 +122,8 @@ if (!pkg.uuid) {
 }
 
 
-//@ts-ignore
-//logger.debug("Startup script...");
-//require("./components/startup");
-
-
+/*
+// TODO remove
 process.nextTick(() => {
 
     // feedback
@@ -141,14 +144,202 @@ process.nextTick(() => {
         //@ts-ignore
         logger.debug("Require components");
 
-        require("./components/webserver");
-        require("./components/devices");
-        require("./components/endpoints");
-        require("./components/interfaces");
-        require("./components/adapters");
-        require("./components/commander");
+        const COMPONENT_NAMES = [
+            "webserver",
+            "devices",
+            "endpoints",
+            "interfaces",
+            "adapters",
+            "commander"
+        ];
+
+        // counter var
+        let counter = COMPONENT_NAMES.length;
+
+
+        COMPONENT_NAMES.forEach((name) => {
+            try {
+
+                // require component
+                let component = require(`./components/${name}`);
+
+                // list for ready events
+                component.events.on("ready", () => {
+
+                    // feedback
+                    //@ts-ignore
+                    logger.verbose("component '%s' ready", name);
+
+                    // count down
+                    counter--;
+
+                    if (counter === 0) {
+                        // feedback
+                        //@ts-ignore
+                        logger.info("All %d components are ready to use!", COMPONENT_NAMES.length);
+                    }
+
+                });
+
+            } catch (err) {
+
+                //feedback
+                //@ts-ignore
+                logger.error(e, "Could not load component: %s", name);
+                process.exit(1000);
+
+            }
+        })
 
     });
 
+});
+*/
+
+
+
+
+process.nextTick(() => {
+
+    // feedback
+    //@ts-ignore
+    logger.debug("Require database");
+    require("./database");
+
+
+    //@ts-ignore
+    logger.debug("Require components");
+
+    const COMPONENT_NAMES = [
+        "webserver",
+        "devices",
+        "endpoints",
+        "interfaces",
+        "adapters",
+        "commander",
+        "plugins",
+        "auth",
+        "users",
+        "scenes",
+        "smtp"
+    ];
+
+    // counter var
+    let counter = COMPONENT_NAMES.length;
+    //const IGNORE = process.env.IGNORE_COMPONENTS.split(",");
+    //console.log(IGNORE)
+
+    COMPONENT_NAMES.forEach((name) => {
+        try {
+
+            //@ts-ignore
+            logger.debug("Load component: %s", name);
+
+            // require component
+            let component = require(`./components/${name}`);
+
+            /*
+            if (IGNORE.includes(name)) {
+                //@ts-ignore
+                logger.warn("Ignore component '%s'", name);
+                counter--;
+                return;
+            }
+            */
+
+            // list for ready events
+            component.events.on("ready", () => {
+
+                // feedback
+                //@ts-ignore
+                logger.verbose("component '%s' ready", name);
+
+                // count down
+                counter--;
+
+                if (counter === 0) {
+                    // feedback
+                    //@ts-ignore
+                    logger.info("All %d components are ready to use!", COMPONENT_NAMES.length);
+                    //events.emit("load_plugins");
+
+                }
+
+            });
+
+        } catch (err) {
+
+            //feedback
+            //@ts-ignore
+            logger.error(err, "Could not load component: %s, Error: %s", name, err.message);
+            process.exit(1000);
+
+        }
+    })
 
 });
+
+
+
+
+hooks.on("crash_report", (event, data, next) => {
+    fs.writeFile(`${process.cwd()}/crash_report`, JSON.stringify({
+        event,
+        data
+    }), (err) => {
+
+        if (err) {
+            //@ts-ignore
+            logger.error(err, "Could not write crash report: %s", err.message);
+        } else {
+            //@ts-ignore
+            logger.info("Crash reported created: %s", `${process.cwd()}/crash_report`);
+        }
+
+        //@ts-ignore
+        logger.error("OpenHaus crashed: '%s': %j", event, data);
+
+
+        if (process.env.EXIT_ON_CRASH === "true") {
+            hooks.emit("cleanup", () => {
+
+                //@ts-ignore
+                logger.verbose("Cleanup hooks done");
+
+                // close mongoose connection
+                mongoose.connection.close(() => {
+                    //@ts-ignore
+                    logger.debug("Database connection closed");
+                    //@ts-ignore
+                    logger.info("Exit OpenHaus process...");
+                    process.exit(1000);
+                });
+
+            });
+        }
+
+    });
+});
+
+/*
+events.on("load_plugins", () => {
+
+    //@ts-ignore
+    logger.debug("Require component: plugins");
+
+    const C_PLUGINS = require("./components/plugins");
+
+    C_PLUGINS.events.on("ready", () => {
+        //@ts-ignore
+        logger.info("%s plugin(s) loaded", C_PLUGINS.PLUGINS.size);
+    });
+
+});
+*/
+
+
+module.exports = {
+    //    events,
+    hooks,
+    logger
+}

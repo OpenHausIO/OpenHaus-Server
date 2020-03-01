@@ -28,7 +28,11 @@ const paramsSchema = new mongoose.Schema({
     value: {
         type: {
             type: String,
-            enum: ["number", "string", "boolean", "binary"],
+            // TODO see below
+            // template used in commander
+            // payload used for raw sending
+            // check/improve boolean type!!!!
+            enum: ["number", "string", "boolean", "binary"], // NOTE: remove binary (boolean?) -> see ..template TODO
             required: true,
         },
         // NOTE noch mal checken was default & pattern machen
@@ -38,7 +42,7 @@ const paramsSchema = new mongoose.Schema({
         min: Number,
         max: Number,
         default: { type: mongoose.Schema.Types.Mixed },
-        pattern: { type: mongoose.Schema.Types.Mixed },
+        pattern: { type: mongoose.Schema.Types.Mixed }, // NOTE: gut wofür ?
     }
 });
 
@@ -57,9 +61,18 @@ const commandSchema = new mongoose.Schema({
         type: ObjectId,
         required: true
     },
-    payload: {
+    template: {
+        // TODO see below
+        // template gets compiled with params
+        // change template to type string?!(!!)
         type: mongoose.Schema.Types.Mixed,
-        required: true
+        //required: true
+    },
+    payload: {
+        // payload is untouched sended to the interface
+        // perfect for binaray data
+        type: mongoose.Schema.Types.Mixed,
+        //required: true
     },
     params: {
         type: [paramsSchema],
@@ -71,12 +84,14 @@ const commandSchema = new mongoose.Schema({
 // create schema
 const schema = new mongoose.Schema({
     name: {
+        // human readable name should,
+        // be displayed in the frontend
         type: String,
         required: true
     },
-    icon: {
+    icon: { // -> meta ?
         type: String,
-        required: true
+        //required: true
     },
     device: {
         type: ObjectId,
@@ -85,12 +100,39 @@ const schema = new mongoose.Schema({
     },
     room: {
         type: ObjectId,
-        required: true,
+        //required: true,
         ref: "Rooms"
     },
     commands: {
         type: [commandSchema],
         //required: true
+    },
+    identifier: {
+        // this should be used by plugins
+        // example: rest api returns a id
+        // the plugins use the id to make
+        // http requests to the api
+        type: mongoose.Schema.Types.Mixed
+    },
+    meta: {
+        manufacturer: {
+            type: String
+        },
+        model: {
+            type: String
+        },
+        web: {
+            type: String
+        },
+        revision: {
+            type: String
+        },
+        /*
+        // ??????
+        icon: {
+            type: String
+        }
+        */
     },
     enabled: {
         type: Boolean,

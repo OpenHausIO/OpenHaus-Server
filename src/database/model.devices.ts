@@ -9,6 +9,8 @@ import * as Joi from "joi";
 // https://stackoverflow.com/questions/15012250/handling-mongoose-validation-errors-where-and-how
 // https://stackoverflow.com/a/17024166/5781499
 
+const REGEX_MAC_ADRESS = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+
 
 enum InterfaceTypes {
     "RS232",
@@ -21,7 +23,8 @@ export interface IInterface {
     type: InterfaceTypes,
     description: String,
     adapter: ObjectId,
-    settings: Object
+    settings: Object,
+    mode: String
 }
 
 export interface IDevice extends mongoose.Document {
@@ -41,7 +44,7 @@ export interface IDevice extends mongoose.Document {
 }
 
 
-const ENUM_SETTINGS = {
+const ENUM_SETTINGS_TYPE = {
     "RS232": Joi.object({
         baudRate: Joi.number().required(),
         dataBits: Joi.number().default(8),
@@ -53,15 +56,23 @@ const ENUM_SETTINGS = {
         xany: Joi.boolean().default(false)
     }),
     "ETHERNET": Joi.object({
-        host: Joi.string().required(),
-        port: Joi.number().required(),
-        path: Joi.string().default("/"),
+        host: Joi.string().required(), // device IP if mode = client, 0.0.0.0 when mode = server, *unless you know what your are doing*!!!
+        port: Joi.number().required(), // -> remove -> transport
+        transport: {
+            protocol: Joi.string().required().valid(["tcp", "udp"]),
+            port: Joi.number().required(), // -> add transport settings
+            mode: Joi.string().valid(["client", "server"]).default("client"),
+            broadcast: Joi.boolean().default(false)
+        },
+        path: Joi.string().default("/"), // remove ?! plugin handle REST apis -> todo
         protocol: Joi.string().required().valid([
             "ws", "wss",
             "http", "https",
-            "tcp", // add rtsp ?!
-            "udp"
-        ])
+            "tcp", // rtsp ?!
+            "udp" // ssdp ?!
+        ]),
+        mode: Joi.string().valid(["client", "server"]).default("client"), // -> remove -> transport
+        mac: Joi.string().regex(REGEX_MAC_ADRESS)
     })
 };
 
@@ -70,7 +81,7 @@ const interfaceSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: Object.keys(ENUM_SETTINGS)
+        enum: Object.keys(ENUM_SETTINGS_TYPE)
     },
     description: {
         type: String
@@ -98,7 +109,7 @@ const interfaceSchema = new mongoose.Schema({
 
                     // get joi validator
                     //@ts-ignore
-                    const result = ENUM_SETTINGS[this.type].validate(v);
+                    const result = ENUM_SETTINGS_TYPE[this.type].validate(v);
 
                     result.then(() => {
                         this.settings = result.value;
@@ -127,6 +138,7 @@ const schema = new mongoose.Schema({
         required: true
     },
     icon: {
+        //NOTE needed?!
         type: String,
         required: true
     },

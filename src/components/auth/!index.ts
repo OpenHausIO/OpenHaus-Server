@@ -5,6 +5,10 @@ import * as logger from "../../logger/index.js";
 const log = logger.create("devices");
 
 
+
+
+
+
 //TODO should we only check when the api is protected ?
 //NOTE API is always protected ?! -> process.env.API_PROTECTED
 // check if we have a keypair for signing JWT tokens

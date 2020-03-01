@@ -1,6 +1,9 @@
 //@ts-ignore
 import Middleware = require("../middleware");
 
+/**
+ * @constructor
+ */
 function Hooks() {
     this.middleware = new Map();
 };
@@ -14,6 +17,7 @@ Hooks.prototype.emit = function (event: String, ...args: Array<any>) {
 
     if (!this.middleware.has(event)) {
         // create new Middleware, no `use` called
+        //@ts-ignore
         this.middleware.set(event, new Middleware());
     }
 
@@ -55,6 +59,7 @@ Hooks.prototype.emit = function (event: String, ...args: Array<any>) {
 Hooks.prototype.on = function (event: String, cb: Function) {
 
     if (!this.middleware.has(event)) {
+        //@ts-ignore
         this.middleware.set(event, new Middleware());
     }
 
@@ -65,3 +70,4 @@ Hooks.prototype.on = function (event: String, cb: Function) {
 
 
 module.exports = Hooks;
+//export default Hooks;

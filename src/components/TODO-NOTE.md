@@ -5,3 +5,10 @@
 - Rename `factory()` zu "init" ?!
 
 - Implement components prefixed with "`!`"
+
+
+- remote/client ip richtig setzen (lib.auth/express)
+- x-real-ip...
+- BadRequest error
+- process.env Boolean convert 
+- remove password in response after an account is created

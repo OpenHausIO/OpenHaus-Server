@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import * as logger from "../../logger/index.js";
-import { IDevice } from '../../database/model.devices.js';
+import { IDevice, IInterface } from '../../database/model.devices.js';
 import Hooks = require("../../system/hooks");
 //@ts-ignore
 import * as InterfaceStream from "interface-stream";
@@ -135,7 +135,9 @@ function update(_id, data, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -178,7 +180,9 @@ function settings(_id, data, cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
 
 }
 
@@ -188,18 +192,37 @@ function settings(_id, data, cb) {
  */
 function factory() {
 
+    // feedback
+    log.verbose("factory called");
+
     // cleanup
     INTERFACES.clear();
+
+    if (CDEVICES.DEVICES.length <= 0) {
+        log.warn("No device in component 'devices', do nothing!");
+    }
 
     CDEVICES.DEVICES.forEach((device: IDevice) => {
         if (device.enabled) {
 
             // feedback
-            log.debug("Handle interfaces for device '%s'", device.name);
+            log.debug("Device (%s) enabled, handle interfaces", device.name);
 
             // create duplex stream
             // for each device interface
-            device.interfaces.forEach((iface) => {
+            device.interfaces.forEach((iface: IInterface) => {
+
+                /*
+                if (!iface._id) {
+                    log.warn("Iface object invalid: %s", device.name);
+                }
+                */
+
+                // FIXME gets higlightet, but why ?!
+                //@ts-ignore
+                if (iface.type === "ETHERNET" && iface.settings.mode === "server" && iface.settings.host !== "0.0.0.0") {
+                    log.warn("Interface '%s' is in server mode, but host is not set to '0.0.0.0'. You can ignore this message if you know what you are doing!");
+                }
 
                 let duplex = new InterfaceStream({
                     // duplex options
@@ -228,6 +251,8 @@ function factory() {
     events.emit("ready");
 
 }
+
+
 
 
 if (!CDEVICES.ready) {

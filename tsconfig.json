@@ -11,7 +11,7 @@
         "importHelpers": true,
         "noImplicitAny": false,
         "removeComments": true,
-        "preserveConstEnums": true,
+        "preserveConstEnums": true, // -> ?!
         "esModuleInterop": false,
         "alwaysStrict": true,
         "noUnusedLocals": true,
@@ -22,13 +22,13 @@
         "sourceMap": false
     },
     "include": [
-        "./src/**/[!!]*",
         "./src/**/*"
         //"./package.json"
     ],
     "exclude": [
         "./node_modules",
         "**/*.spec.ts",
+        "src/!*/**",
         "adapter/**"
     ]
 }
