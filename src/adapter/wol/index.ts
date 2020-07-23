@@ -25,7 +25,7 @@ module.exports = (log: winston.Logger) => {
         const encode = new Transform({
             transform: (mac, encoding, cb) => {
 
-                const parts = mac.match(/[0-9a-fA-F]{2}/g);
+                let parts = mac.match(/[0-9a-fA-F]{2}/g);
 
                 if (!parts || parts.length !== MAC_LENGTH) {
                     cb(new Error(`malformed MAC address "${mac}"`));

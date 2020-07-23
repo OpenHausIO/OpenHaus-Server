@@ -72,7 +72,7 @@ const logger = winston.createLogger({
                 winston.format.splat(),
                 winston.format.json()
             ),
-            filename: path.resolve(process.env.LOG_PATH, "OpenHaus.log")
+            filename: path.resolve(process.env.LOG_PATH, "system.log")
         })
     ]
 });
@@ -124,16 +124,22 @@ logger.create = (name: string) => {
     if (process.env.LOG_TARGET) {
         if (process.env.LOG_TARGET === name) {
             options.silent = false;
-        } else {
+        }/* else {
             options.silent = true;
-        }
+        }*/
     } else {
+        options.silent = false;
+    }
+
+    // allways log system messages
+    if (process.env.LOG_TARGET && RegExp("system*").test(name)) {
         options.silent = false;
     }
 
 
     // supress all logger messages
     // eg for unit tests
+    // NOTE remove/mute only console messages ?
     if (process.env.LOG_SUPPRESS === "true") {
         options.silent = true;
     }

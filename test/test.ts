@@ -2,9 +2,9 @@ import rimraf = require("rimraf");
 require("../src/environment");
 
 // override env for tests
-process.env.LOG_SUPPRESS = "true";              // we dont care about CLI messages from components
-process.env.LOG_PATH = "/tmp/OpenHaus-logs";    // dump logfiles to temp
-process.env.DB_NAME = String(Date.now());       // use fake/new/dummy database
+process.env.LOG_SUPPRESS = "true"; // we dont care about CLI messages from components
+process.env.LOG_PATH = "/tmp/OpenHaus-test-logs"; // dump logfiles to temp
+process.env.DB_NAME = String(Date.now()); // use fake/new/dummy database
 
 // connect to database
 const db = require("../src/database");
@@ -30,13 +30,6 @@ describe("OpenHaus - Server", () => {
     });
 
 
-    // test server components
-    describe("Logger", () => {
-        //require("./devices");
-        //require("./interfaces");
-    });
-
-
     // test helper libraries
     describe("Libraries", () => {
         //require("./devices");
@@ -44,7 +37,7 @@ describe("OpenHaus - Server", () => {
     });
 
 
-    // test server components
+    // test components
     describe("Components", () => {
         require("./components/devices");
         require("./components/interfaces");

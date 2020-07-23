@@ -15,6 +15,7 @@ const hooks = new Hooks();
 // use express as http handler
 const app = express();
 const server = http.createServer();
+
 //@ts-ignore
 server.started = false;
 
@@ -34,8 +35,12 @@ server.on("listening", () => {
 
     log.info("Require API routes");
     console.log("-- API ROUTES NOT REQUIRED!!!!!!!!!!!!");
+
     //require("../../routes/router.auth.js")(app);
-    // require("../../!routes/router.api.js")(app);
+    //@ts-ignore
+    require("./router/router.main")(app, logger.create("webserver/router/main"));
+    //@ts-ignore
+    //require("../../routes/router.api.js")(app, logger.create("webserver/router/api"));
     //require("../../routes/router.plugins.js")(app);
 
 
@@ -55,14 +60,12 @@ const COMPONENT = {
     events
 };
 
-
-module.exports = {
+const prototype = Object.create(COMPONENT);
+module.exports = Object.assign(prototype, {
     server,
     start,
-    stop,
-    __proto__: COMPONENT,
-    prototype: COMPONENT
-};
+    stop
+});
 
 
 /**
@@ -75,7 +78,7 @@ module.exports = {
 function start(cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("start", () => {
+        hooks.trigger("start", () => {
 
             // feedback
             log.debug("Start http server...");
@@ -84,6 +87,10 @@ function start(cb) {
                 log.verbose("HTTP server started");
                 resolve();
                 events.emit("started");
+            });
+
+            server.once("error", (err) => {
+                reject(err);
             });
 
             // listen
@@ -97,7 +104,9 @@ function start(cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then(() => {
+        cb(null);
+    }).catch(cb);
 
 }
 
@@ -112,7 +121,7 @@ function start(cb) {
 function stop(cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("stop", () => {
+        hooks.trigger("stop", () => {
 
             // feedback
             log.debug("Stop http server...");
@@ -131,7 +140,9 @@ function stop(cb) {
     }
 
     // use callback
-    prom.then(cb).catch(cb);
+    prom.then(() => {
+        cb(null);
+    }).catch(cb);
 
 }
 
@@ -151,7 +162,6 @@ function factory() {
 
             //@ts-ignore
             server.started = false; // -> server.running ?!
-            //module.exports.isReady = false; //NOTE needed?!
             server.listen(Number(process.env.HTTP_PORT), String(process.env.HTTP_HOST));
 
         });
@@ -166,175 +176,3 @@ function factory() {
 
 // init
 factory();
-
-
-
-
-/*
-
-process.nextTick(() => {
-
-    // create express app instace
-    // use express as http handler
-    const app = express();
-
-
-    require("./database/index.js");
-    require("./interfaces.js");
-    require("./adapter.js");
-
-    setTimeout(() => {
-        require("./endpoint.js");
-    }, 500);
-
-
-
-    setTimeout(() => {
-        //  log.warn("Require API routes");
-        require("./routes/router.auth.js")(app);
-        require("./routes/router.api.js")(app);
-        //require("./routes/router.plugins.js")(app);
-    }, 1000);
-
-
-
-    setImmediate(() => {
-
-        // HTTP Server
-        // port based
-        (() => {
-
-            const server = app.listen(
-                Number(process.env.HTTP_PORT),
-                String(process.env.HTTP_HOST),
-                Number(process.env.HTTP_BACKLOG), function () {
-
-                    const addr = this.address();
-                    log.info("Listen on http://%s:%d", addr.address, addr.port);
-
-                });
-
-            server.on("error", (err) => {
-
-                //@ts-ignore
-                log.error("Could not start HTTP server on %s:%d (%s)", process.env.HTTP_HOST, process.env.HTTP_PORT, err.code);
-                //log.error(err, null);
-                return process.exit(1);
-
-
-            });
-
-        })();
-
-
-        // HTTP Server
-        // socket based
-        (() => {
-            if (String(process.env.HTTP_SOCK_ENABLED) == "true") {
-
-                // feedback
-                log.debug("sock enabled, create/listen server");
-                log.warn("START SOCKET SERVER WITHOUT AUTHENTICATION LISTENING!");
-
-                // database stuff
-                const mongoose = require("mongoose");
-                const model = mongoose.model("Users");
-
-                model.find({}, (err: Error, docs: Array<IUser>) => {
-
-                    if (err) {
-                        log.error(err, "Could not fetch databse: %s", err.message);
-                        return;
-                    }
-
-                    if (docs.length > 0) {
-
-                        // feedback
-                        logger.verbose("Users in databse found, dont start http socket server");
-
-                    } else {
-
-                        log.debug("Create socket HTTP server");
-
-                        //@ts-ignore
-                        const server = http.createServer();
-
-
-                        server.on("request", require("./routes/socket-server.js"));
-
-
-                        server.on("error", (err: Error) => {
-
-                            //@ts-ignore
-                            log.error("Could not start HTTP socket server: %s", err.code);
-                            //log.error(err, null);
-                            return process.exit(1);
-
-
-                        });
-
-
-                        server.listen(
-                            //@ts-ignore
-                            String(process.env.HTTP_SOCK_PATH),
-                            Number(process.env.HTTP_BACKLOG),
-                            () => {
-
-                                log.info("HTTP Socket server started on '%s'", process.env.HTTP_SOCK_PATH);
-
-                                process.stdin.resume();
-
-                                const exitHandler = (
-                                    options: any,
-                                    code: Number
-                                ) => {
-
-                                    if (options.cleanup) {
-                                        try {
-
-                                            // remove socket file from file system
-                                            fs.unlinkSync(String(process.env.HTTP_SOCK_PATH));
-                                            process.exit();
-
-                                        } catch (e) {
-                                            //@ts-ignore
-                                            if (err.code === "ENOENT") {
-                                                logger.debug("sock file not found!");
-                                            } else {
-                                                logger.error(e, "Could not remove socket file! %s", e.code);
-                                            }
-                                        }
-                                    }
-
-                                    if (code || code === 0) {
-                                        console.log(code);
-
-                                    }
-
-                                    if (options.exit) {
-                                        process.exit();
-                                    }
-
-                                };
-
-
-                                process.on('exit', exitHandler.bind(null, { cleanup: true }));
-                                process.on('SIGINT', exitHandler.bind(null, { exit: true }));
-                                process.on('SIGUSR1', exitHandler.bind(null, { exit: true }));
-                                process.on('SIGUSR2', exitHandler.bind(null, { exit: true }));
-                                process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
-
-
-                            });
-
-                    }
-
-                });
-
-            }
-        })();
-
-    });
-
-});
-*/

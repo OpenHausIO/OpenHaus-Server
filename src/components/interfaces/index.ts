@@ -1,13 +1,16 @@
 import { EventEmitter } from "events";
 import * as logger from "../../logger/index.js";
-import { IDevice, IInterface } from '../../database/model.devices.js';
+//import { IDevice, IInterface } from '../../database/model.devices.js';
 import Hooks = require("../../system/hooks");
 //@ts-ignore
-import * as InterfaceStream from "interface-stream";
+import * as listtream from "../adapter/node_modules/interface-stream";
 import mongoose = require("mongoose");
+import { IDevice, IInterface } from "../../database/model.devices.js";
 //import { ObjectID } from "bson";
+const interfaceStream = require("interface-stream");
 
-const CDEVICES = require("../devices");
+//const CDEVICES = require("../devices");
+const model = mongoose.model("Devices");
 
 //@ts-ignore
 const log = logger.create("interfaces");
@@ -15,47 +18,119 @@ const events = new EventEmitter();
 //@ts-ignore
 const hooks = new Hooks();
 
-export interface CIInterface extends InterfaceStream {
-
-}
 
 
-export interface CINTERFACES extends EventEmitter {
-    ready: Boolean,
-    INTERFACES: Map<String, Object>
-};
-
-
-
-const INTERFACES: Map<String, InterfaceStream> = new Map();
-
-/*
-module.exports = Object.assign(events, {
-    
-    isReady: false,
-    factory
-});
-*/
+// store
+const list = new Map();
 
 
 //@ts-ignore
 const COMPONENT = {
     ready: false,
-    factory,
     hooks,
     events
 };
 
-
-module.exports = {
-    INTERFACES,
+const prototype = Object.create(COMPONENT);
+module.exports = Object.assign(prototype, {
+    list,
     update,
-    settings,
-    __proto__: COMPONENT,
-    prototype: COMPONENT
-};
+    add,
+    get,
+    remove,
+    settings
+});
+
+function add(_id, data, cb) {
+
+    // promise wrapper
+    let prom = new Promise((resolve, reject) => {
+        hooks.trigger("add", data, () => {
+
+            model.findByIdAndUpdate(_id, {
+                $push: {
+                    interfaces: data
+                }
+            }, (err, result) => {
+
+                if (err) {
+                    log.warn(err, "Could not add interface to device '%s':", _id, err);
+                    reject(err);
+                    return;
+                }
+
+                events.emit("added", result);
+                resolve(result);
+
+            });
 
 
+        });
+    });
+
+    if (!cb) {
+        return prom;
+    }
+
+    // callback
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
+}
+
+
+function get(_id, cb) {
+
+    // promise wrapper
+    let prom = new Promise((resolve, reject) => {
+        hooks.trigger("get", _id, () => {
+
+            if (list.has(_id)) {
+
+                resolve(list.get(_id));
+                events.emit("getted", _id);
+
+            } else {
+
+                resolve(null);
+
+            }
+
+        });
+    });
+
+    if (!cb) {
+        return prom;
+    }
+
+    // callback
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
+
+}
+
+
+function remove(_id, cb) {
+
+    // promise wrapper
+    let prom = new Promise((resolve, reject) => {
+        hooks.trigger("remove", _id, () => {
+
+            events.emit("removed", _id);
+
+        });
+    });
+
+    if (!cb) {
+        return prom;
+    }
+
+    // callback
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
+}
 
 
 /**
@@ -71,11 +146,15 @@ function update(_id, data, cb) {
 
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("update", _id, data, () => {
+        hooks.trigger("update", _id, data, () => {
 
 
             mongoose.model("Devices").find({
-                interface: _id
+                $in: {
+                    interfaces: {
+                        _id
+                    }
+                }
             }).exec((err, doc) => {
 
                 if (err) {
@@ -144,8 +223,9 @@ function update(_id, data, cb) {
 
 /**
  * Change settings on interface
- * @param _id 
- * @param settings 
+ * @param {string} _id 
+ * @param {object} data
+ * @param {function}  cb
  * @fires settings [hook]
  * @fires settings [event]
  */
@@ -153,23 +233,10 @@ function settings(_id, data, cb) {
 
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("settings", _id, data, () => {
+        hooks.trigger("settings", _id, data, () => {
 
-            update(_id, {
-                $set: data
-            }, (err, result) => {
 
-                if (err) {
-                    log.error(err, "Could not change settings: %s", err.message);
-                    reject(err);
-                    return;
-                }
-
-                // done
-                events.emit("settings", _id, data);
-                resolve(Boolean(result.ok));
-
-            });
+            //TODO
 
         });
     });
@@ -187,78 +254,51 @@ function settings(_id, data, cb) {
 }
 
 
-/**
- * Component factory
- */
-function factory() {
 
-    // feedback
-    log.verbose("factory called");
 
-    // cleanup
-    INTERFACES.clear();
+setImmediate(() => {
 
-    if (CDEVICES.DEVICES.length <= 0) {
-        log.warn("No device in component 'devices', do nothing!");
-    }
+    list.clear();
 
-    CDEVICES.DEVICES.forEach((device: IDevice) => {
-        if (device.enabled) {
+    // fetch docs from database
+    mongoose.model("Devices").find({}).lean().exec((err, devices) => {
+
+        if (err) {
 
             // feedback
-            log.debug("Device (%s) enabled, handle interfaces", device.name);
-
-            // create duplex stream
-            // for each device interface
-            device.interfaces.forEach((iface: IInterface) => {
-
-                /*
-                if (!iface._id) {
-                    log.warn("Iface object invalid: %s", device.name);
-                }
-                */
-
-                // FIXME gets higlightet, but why ?!
-                //@ts-ignore
-                if (iface.type === "ETHERNET" && iface.settings.mode === "server" && iface.settings.host !== "0.0.0.0") {
-                    log.warn("Interface '%s' is in server mode, but host is not set to '0.0.0.0'. You can ignore this message if you know what you are doing!");
-                }
-
-                let duplex = new InterfaceStream({
-                    // duplex options
-                });
-
-                Object.assign(duplex, iface);
-                INTERFACES.set(String(iface._id), duplex);
-
-                // feedback
-                log.verbose("Duplex Stream Interface created for interface: %s", duplex._id);
-
-            });
-
-        } else {
-
-            // feedback
-            log.debug("Ingore device '%s' (%s), not enabled", device.name, device._id)
+            log.error(err, "Could not fetch devices, cant do anything!", err.message);
+            return;
 
         }
+
+        if (!devices) {
+            log.warn("No devices found, nothing to do!");
+            return;
+        }
+
+        devices.map((device: IDevice) => {
+            return device.interfaces;
+            //@ts-ignore
+        }).flat().forEach((iface: IInterface) => {
+
+            // create duplex interface
+            let stream = new interfaceStream(iface, {
+                // duplex stream options
+            });
+
+            list.set(iface._id, stream);
+
+        });
+
+
+
+        // feedback
+        log.info("Component initialized");
+
+        COMPONENT.ready = true
+        events.emit("ready");
+
     });
 
-    // feedback
-    log.info("Component initialized");
 
-    COMPONENT.ready = true
-    events.emit("ready");
-
-}
-
-
-
-
-if (!CDEVICES.ready) {
-    CDEVICES.events.on("ready", () => {
-        factory();
-    });
-} else {
-    factory();
-}
+});

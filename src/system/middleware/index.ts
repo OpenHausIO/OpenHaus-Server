@@ -4,8 +4,6 @@ function Middleware() {
 
 
 Middleware.prototype.use = function (fn: Function) {
-
-
     this.go = ((stack) => {
         return (next: Function) => {
 
@@ -15,7 +13,6 @@ Middleware.prototype.use = function (fn: Function) {
 
         };
     })(this.go);
-
 };
 
 

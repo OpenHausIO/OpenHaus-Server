@@ -1,46 +1,29 @@
 import { EventEmitter } from "events";
 import * as mongoose from "mongoose";
 import * as logger from "../../logger/index.js";
-import { IEndpoint, ICommand } from '../../database/model.endpoints.js';
+import { IEndpoint, ICommand } from '../../database/model.endpoints';
 import Hooks = require("../../system/hooks");
+
+//import C_ADAPTER = 
 
 
 //@ts-ignore
 const log = logger.create("endpoints");
 const events = new EventEmitter();
 
+//@ts-ignore
+const hooks = new Hooks();
 
-const CADAPTER = require("../adapters");
-const ADAPTER_INSTANCES = CADAPTER.ADAPTER_INSTANCES;
-const CCOMMANDER = require("../commander");
-const Commander = CCOMMANDER.Commander;
-
-
-export interface CEndpoints extends EventEmitter {
-    isReady: Boolean
-};
-
-
-
+import C_ADAPTER = require("../adapter");
+import C_INTERFACES = require("../interfaces");
 
 
 const model = mongoose.model("Endpoints");
 
-//@ts-ignore
-const hooks = new Hooks();
 
-
-const ENDPOINTS: Array<IEndpoint> = [];
-
-// key = interface id
-// value = commander instance
-const INTERFACE_COMMANDER = new Map<String, Object>();
-
-// key = endpoint id
-// values = array of interfaces
-const ENDPOINT_INTERFACES = new Map<String, Array<String>>();
-
-
+const list = new Map();
+const interfaceCommands = new Map();
+const commanderInstances = new Map();
 
 //@ts-ignore
 const COMPONENT = {
@@ -50,28 +33,28 @@ const COMPONENT = {
     events
 };
 
-
-Object.assign(COMPONENT, {
-    refresh
-});
-
-
-module.exports = {
-    ENDPOINT_INTERFACES,
-    INTERFACE_COMMANDER,
-    ENDPOINTS,
+const protoype = Object.create(COMPONENT);
+module.exports = Object.assign(protoype, {
+    list,
     remove,
     update,
     disable,
     enable,
     fetch,
     add,
-    command,
-    __proto__: COMPONENT,
-    prototype: COMPONENT
-};
+    clean,
+    get,
+    refresh,
+});
 
-export default module.exports;
+
+const Commander = require("./commander")(log);
+
+const Endpoint = require("./endpoint")(log, {
+    commanderInstances,
+    interfaceCommands,
+    Commander
+});
 
 
 
@@ -86,7 +69,7 @@ function remove(_id, cb) {
 
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("remove", _id, () => {
+        hooks.trigger("remove", _id, () => {
 
             model.find({
                 _id
@@ -148,7 +131,7 @@ function update(_id, data, cb) {
 
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("update", _id, data, () => {
+        hooks.trigger("update", _id, data, () => {
 
             model.findOne({
                 _id
@@ -205,9 +188,27 @@ function update(_id, data, cb) {
 function disable(_id, cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("disable", _id, () => {
+        hooks.trigger("disable", _id, () => {
 
-            // TODO
+            model.updateOne(_id, {
+                $set: {
+                    enabled: false
+                }
+            }, (err, result) => {
+
+                if (err) {
+
+                    // feedback
+                    log.error(err, "Could not disable endpoint: %s", err.message);
+
+                    reject(err);
+
+                }
+
+                events.emit("disabled");
+                resolve(result);
+
+            });
 
         });
     });
@@ -237,7 +238,7 @@ function disable(_id, cb) {
 function enable(_id, cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("enable", _id, () => {
+        hooks.trigger("enable", _id, () => {
 
             // TODO
 
@@ -268,10 +269,10 @@ function enable(_id, cb) {
 function refresh(cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("refresh", {
+        hooks.trigger("refresh", {
             INTERFACE_COMMANDER,
             ENDPOINT_INTERFACES,
-            ENDPOINTS
+            list
         }, () => {
 
             // feedback
@@ -280,24 +281,25 @@ function refresh(cb) {
             // cleanup
             INTERFACE_COMMANDER.clear();
             ENDPOINT_INTERFACES.clear();
-            ENDPOINTS.splice(0, ENDPOINTS.length);
+            list.splice(0, list.length);
 
             // feedback
-            log.verbose("fetch endpoints from database");
+            log.verbose("fetch list from database");
 
             // fetch from database
             model.find({}).lean().exec((err, docs) => {
 
                 if (err) {
-                    log.error(err, "Could not fetch endpoints from database");
+                    log.error(err, "Could not fetch list from database");
                     reject(err);
                 }
 
 
                 // feedback
-                log.debug("%d endpoints fetched from database", docs.length);
+                log.debug("%d list fetched from database", docs.length);
 
-                ENDPOINTS.push(...docs);
+                //@ts-ignore
+                list.push(...docs);
 
 
                 docs.forEach((endpoint: IEndpoint) => {
@@ -349,7 +351,7 @@ function refresh(cb) {
                             // FIXME
                             // in 99,9% device is not enabled, should we query the db ?
                             // or in the interface/device component take a lookup ?
-                            // if device is disable, disable all endpoints too!! (?)
+                            // if device is disable, disable all list too!! (?)
 
 
                             //console.log(ADAPTER_INSTANCES)
@@ -405,7 +407,7 @@ function fetch(filter, lean, cb) {
 
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("fetch", filter, lean, () => {
+        hooks.trigger("fetch", filter, lean, () => {
 
             // build query
             let query = model.find(filter);
@@ -459,7 +461,7 @@ function add(data, cb) {
 
     // wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("add", data, () => {
+        hooks.trigger("add", data, () => {
 
             // save model
             new model(data).save((err, doc) => {
@@ -499,46 +501,37 @@ function add(data, cb) {
 
 
 /**
- * Send command to endpoint/device interface
- * @param _id 
- * @param cmd_obj 
- * @param params 
+ * Remove all list
+ * @fires clean [hook]
+ * @fires cleaned [event]
+ * @returns {(Promise|undefined)} Returns a promise if no callback is passed* 
+ * @param {function} [cb]
  */
-function command(cmd_obj, params, cb) {
+function clean(cb) {
 
-    // promise wrapper
+    // wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("command.transmit", cmd_obj, params, () => {
+        hooks.trigger("clean", () => {
+            model.deleteMany({}, (err) => {
 
-            // get commander instance
-            let commander = INTERFACE_COMMANDER.get(String(cmd_obj.interface));
+                if (err) {
 
-            if (!commander) {
+                    // feedback
+                    log.error(err, "Could not remove endpoints", err.message);
 
-                // feedback
-                log.warn("No comander instance for endpoint interface '%s'", cmd_obj.interface);
+                    reject(err);
+                    return;
 
-                reject(new Error("NO_COMMANDER_INSTANCE"));
-                return;
-            }
-
-            try {
-
-                //@ts-ignore
-                commander.submit(cmd_obj, params);
-                resolve({
-                    cmd_obj,
-                    params
-                });
-
-            } catch (e) {
+                }
 
                 // feedback
-                log.error(e, "Could not submit command: %s", e.message);
-                reject(e);
+                log.info("Removed all endpoints");
 
-            }
+                // done
+                resolve();
+                events.emit("cleaned");
 
+            });
         });
     });
 
@@ -546,7 +539,7 @@ function command(cmd_obj, params, cb) {
         return prom;
     }
 
-    // use callback
+    // callback
     prom.then((data) => {
         cb(null, data);
     }).catch(cb);
@@ -555,105 +548,96 @@ function command(cmd_obj, params, cb) {
 
 
 /**
+ * TODO
+ * @param _id 
+ * @param cb 
+ */
+function get(_id, cb) {
+
+
+    // wrapper
+    let prom = new Promise((resolve, reject) => {
+        hooks.trigger("get", () => {
+
+            // TODO implement
+
+            /*
+                            if (err) {
+            
+                                // feedback
+                                log.error(err, "Could remove list", err.message);
+            
+                                reject(err);
+                                return;
+            
+                            }
+            
+                            // feedback
+                            log.info("Removed all list");
+            
+                            // done
+                            resolve();
+                            events.emit("get");
+            */
+
+        });
+    });
+
+    if (!cb) {
+        return prom;
+    }
+
+    // callback
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
+
+}
+
+
+
+
+
+/**
  * Component factory
  */
 function factory() {
 
-    // feedback
-    log.debug("Factory called");
-    log.verbose("Clear component maps (interface_commander, endpoint_interfaces)");
+    list.clear();
 
-    // cleanup
-    INTERFACE_COMMANDER.clear();
-    ENDPOINT_INTERFACES.clear();
-    ENDPOINTS.splice(0, ENDPOINTS.length);
 
-    // feedback
-    log.verbose("fetch endpoints from database");
+    interfaceCommands.clear();
+    commanderInstances.clear();
 
-    // fetch from database
+
+
     model.find({}).lean().exec((err, docs) => {
 
         if (err) {
-            log.error(err, "Could not fetch endpoints from database");
+            log.error(err, "Could not fetch docs: %s", err.message);
             process.exit();
         }
 
 
-        // feedback
-        log.debug("%d endpoints fetched from database", docs.length);
-
-        ENDPOINTS.push(...docs);
-
-
-        docs.forEach((endpoint: IEndpoint) => {
-
-            let interfaces: Array<String> = [];
-
-            endpoint.commands.forEach((command: ICommand) => {
-
-                if (!interfaces.includes(String(command.interface))) {
-                    interfaces.push(String(command.interface));
-                }
-
-                ENDPOINT_INTERFACES.set(String(endpoint._id), interfaces);
-
-            });
-
-            interfaces.forEach((id) => {
-
-                //console.log("iface:", id, endpoint.commands);
+        let enabled = docs.filter((doc) => {
+            //@ts-ignore
+            return doc.enabled;
+        });
 
 
-                let ifaceCmds = endpoint.commands.filter((cmd: ICommand) => {
-                    return String(cmd.interface) === String(id);
-                });
+        enabled.forEach((doc) => {
 
-                //console.log(typeof id)
-                // ifaceCmds.any((cmd) => { return cmd.tepmlate || false })
-
-                //FIXME ts error, ADAPTER_INSTANCES.get not recognized
-                //@ts-ignore
-                if (ADAPTER_INSTANCES.has(String(id))) {
-
-                    //@ts-ignore
-                    let adapter = ADAPTER_INSTANCES.get(String(id));
-                    let commander = new Commander(ifaceCmds, adapter, id);
-                    INTERFACE_COMMANDER.set(String(id), commander);
-
-                    // listen for device commands from commander instance
-                    // re-emit them over components events EventEmitter
-                    commander.on("command", (...args: any[]) => {
-                        log.verbose("<CMD:received>", args, endpoint);
-                        events.emit.apply(events, ["command.received", ...args, endpoint]);
-                    });
-
-
-                } else {
-
-                    // FIXME
-                    // in 99,9% device is not enabled, should we query the db ?
-                    // or in the interface/device component take a lookup ?
-                    // if device is disable, disable all endpoints too!! (?)
-
-
-                    //console.log(ADAPTER_INSTANCES)
-                    log.warn("Could not find adapter instance for interface id %s (%s), device enabled?!", id, endpoint.name);
-                    log.error("Could not create create endpoint commander instance for interface %s", id);
-
-                }
-
-
-            });
-
-
-
+            // create new endpoint instance
+            let endpoint = new Endpoint(doc);
+            list.set(String(doc._id), endpoint);
 
         });
 
-        log.info("Component initialized");
 
-        COMPONENT.ready = true
+        // feedback
+        log.debug("%d/%d endpoints enabled", enabled.length, docs.length);
+
+        COMPONENT.ready = true;
         events.emit("ready");
 
     });
@@ -661,10 +645,32 @@ function factory() {
 }
 
 
-if (!CADAPTER.ready) {
-    CADAPTER.events.on("ready", () => {
+
+setImmediate(() => {
+
+    const dependencies = [
+        C_ADAPTER,
+        C_INTERFACES
+    ].map((component) => {
+        return new Promise((resolve) => {
+
+            //@ts-ignore
+            if (component.ready) {
+                return resolve();
+            }
+
+            //@ts-ignore
+            component.events.on("ready", () => {
+                resolve();
+            });
+
+        })
+    });
+
+
+    // wait for dependencies befor we init
+    Promise.all(dependencies).then(() => {
         factory();
     });
-} else {
-    factory();
-}
+
+});

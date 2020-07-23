@@ -12,3 +12,9 @@
 - BadRequest error
 - process.env Boolean convert 
 - remove password in response after an account is created
+
+
+
+#### Component
+- rename `COMPONENT` to `PROTOTYPE`
+- rename `prototype` to `COMPONENT`

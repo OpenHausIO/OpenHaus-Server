@@ -18,7 +18,7 @@ const events = new EventEmitter();
 const model = mongoose.model("Devices");
 //@ts-ignore
 const hooks = new Hooks();
-const DEVICES: Array<IDevice> = [];
+const list = new Map();
 //const init = false;
 
 
@@ -35,28 +35,55 @@ const COMPONENT = {
 };
 
 
-// add component methods
-Object.assign(COMPONENT, {
-    refresh
-    // init?!
+const prototype = Object.create(COMPONENT);
+
+Object.assign(prototype, {
+    list
 });
 
-
-// export component
-module.exports = {
-    DEVICES,
+module.exports = Object.assign(prototype, {
+    //list,
     add,
+    get,
     disable,
     enable,
     update,
     fetch,
     remove,
-    //refresh, -> ist eigentlich nicht component typisch wie: ready, factory, hooks & events...
-    __proto__: COMPONENT,
-    prototype: COMPONENT
-};
+    refresh
+});
 
 
+function get(_id, cb) {
+
+    // promise wrapper
+    let prom = new Promise((resolve, reject) => {
+        hooks.trigger("get", _id, () => {
+
+            if (list.has(_id)) {
+
+                resolve(list.get(_id));
+                events.emit("getted", _id);
+
+            } else {
+
+                resolve(null);
+
+            }
+
+        });
+    });
+
+    if (!cb) {
+        return prom;
+    }
+
+    // callback
+    prom.then((data) => {
+        cb(null, data);
+    }).catch(cb);
+
+}
 
 
 /**
@@ -68,7 +95,7 @@ module.exports = {
  * @private
  */
 function updateDeviceTree(_id, data, cb) {
-    hooks.emit("updateDeviceTree", _id, data, () => {
+    hooks.trigger("updateDeviceTree", _id, data, () => {
         model.findOne({
             _id
         }, (err, device) => {
@@ -140,11 +167,11 @@ function remove(_id, cb) {
 
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("remove", _id, () => {
+        hooks.trigger("remove", _id, () => {
 
             model.find({
                 _id
-            }).exec((err, doc) => {
+            }).exec((err, doc: IDevice) => {
 
                 if (err) {
 
@@ -177,15 +204,15 @@ function remove(_id, cb) {
                     if (err) {
 
                         // feedback
-                        log.error(err, "Could not remove device documents for device %s", _id);
+                        log.error(err, "Could not remove device documents for device '%s' (%s)", doc.name, _id);
 
                         reject(err);
                         return;
 
                     }
 
-                    events.emit("removed", _id);
-                    resolve(_id);
+                    events.emit("removed", doc);
+                    resolve(doc);
 
                 });
 
@@ -219,7 +246,7 @@ function update(_id, data, cb) {
 
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("update", _id, data, () => {
+        hooks.trigger("update", _id, data, () => {
 
             model.findOne({
                 _id
@@ -276,7 +303,7 @@ function update(_id, data, cb) {
 function disable(_id, cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("disable", _id, () => {
+        hooks.trigger("disable", _id, () => {
 
             updateDeviceTree(_id, {
                 enabled: false
@@ -288,7 +315,7 @@ function disable(_id, cb) {
                 }
 
                 events.emit("disabled", _id, ok);
-                //hooks.emit("disabled", _id, ok, cb);
+                //hooks.trigger("disabled", _id, ok, cb);
 
                 resolve(_id);
 
@@ -322,7 +349,7 @@ function disable(_id, cb) {
 function enable(_id, cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("enable", _id, () => {
+        hooks.trigger("enable", _id, () => {
             updateDeviceTree(_id, {
                 enabled: true
             }, (err, ok) => {
@@ -333,7 +360,7 @@ function enable(_id, cb) {
                 }
 
                 events.emit("enabled", _id, ok);
-                //hooks.emit("enabled", _id, ok, cb);
+                //hooks.trigger("enabled", _id, ok, cb);
 
                 resolve(_id);
 
@@ -365,14 +392,14 @@ function enable(_id, cb) {
 function refresh(cb) {
 
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("refresh", DEVICES, () => {
+        hooks.trigger("refresh", list, () => {
 
             // cleanup devices array
-            DEVICES.splice(0, DEVICES.length);
+            list.clear();
 
             model.find({
                 //enabled: true
-            }).lean().exec((err, docs) => {
+            }).lean().exec((err, docs: Array<IDevice>) => {
 
                 if (err) {
 
@@ -384,7 +411,9 @@ function refresh(cb) {
 
                 }
 
-                DEVICES.push(...docs);
+                docs.forEach((device) => {
+                    list.set(device._id, device);
+                });
 
                 // feedback
                 log.debug("Device list refreshed!");
@@ -426,9 +455,13 @@ function fetch(filter, lean, cb) {
         lean = true;
     }
 
+    if (!lean && !cb) {
+        lean = true;
+    }
+
     // promise wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("fetch", filter, lean, () => {
+        hooks.trigger("fetch", filter, lean, () => {
 
             // build query
             let query = model.find(filter);
@@ -492,7 +525,7 @@ function add(data, cb) {
 
     // wrapper
     let prom = new Promise((resolve, reject) => {
-        hooks.emit("add", data, () => {
+        hooks.trigger("add", data, () => {
 
             // save model
             new model(data).save((err, doc) => {
@@ -538,18 +571,20 @@ function add(data, cb) {
 function factory() {
 
     // cleanup
-    DEVICES.splice(0, DEVICES.length);
+    list.clear();
 
     model.find({
         //enabled: true
-    }).lean().exec((err, docs) => {
+    }).lean().exec((err, docs: Array<IDevice>) => {
 
         if (err) {
             log.error(err, "Could not fetch devices from database");
             process.exit();
         }
 
-        DEVICES.push(...docs);
+        docs.forEach((device) => {
+            list.set(device._id, device);
+        });
 
         log.debug("%d device(s) fetched from database", docs.length);
         log.info("Component initialized");
@@ -561,19 +596,5 @@ function factory() {
     });
 
 }
-
-/*
-if (process.env.IGNORE_COMPONENTS.split(",").includes("devices")) {
-
-    // feedback
-    log.warn("Component ignored");
-
-} else {
-
-    // init
-    factory();
-
-}
-*/
 
 factory();

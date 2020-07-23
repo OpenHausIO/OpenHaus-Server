@@ -12,10 +12,11 @@ export interface IAdapter extends mongoose.Document {
 
 // create schema
 const schema = new mongoose.Schema({
+    /*
     name: {
         type: String,
         required: true
-    },
+    },/*
     description: {
         type: String,
         required: true
@@ -23,11 +24,12 @@ const schema = new mongoose.Schema({
     version: {
         type: Number,
         required: true
-    },
+    },*/
+    /*
     author: {
         type: String,
         requried: true
-    },
+    },*/
     folder: {
         type: String,
         required: true,

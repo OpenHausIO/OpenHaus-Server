@@ -1,6 +1,10 @@
 import * as mongoose from "mongoose";
 import { ObjectId } from 'bson';
 
+// TODO add custom fields ?!
+// add custom fields for varius reasons:
+// - plugins identification
+// https://github.com/hnryjms/mongoose-custom-fields
 
 export interface ICommand {
     _id: ObjectId,
@@ -65,6 +69,7 @@ const commandSchema = new mongoose.Schema({
         // TODO see below
         // template gets compiled with params
         // change template to type string?!(!!)
+        // template can be binary too!
         type: mongoose.Schema.Types.Mixed,
         //required: true
     },
@@ -78,6 +83,8 @@ const commandSchema = new mongoose.Schema({
         type: [paramsSchema],
         default: []
     }
+    // TODO add custom/identifier for plugins?
+    // TODO add state as virtual field for on/off, open/close state?
 });
 
 
@@ -137,6 +144,10 @@ const schema = new mongoose.Schema({
     enabled: {
         type: Boolean,
         default: true
+    },
+    hidden: {
+        type: Boolean,
+        defualt: false
     }
 });
 

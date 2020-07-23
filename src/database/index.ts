@@ -81,13 +81,14 @@ mongoose.plugin(function (
 
 
 require("./model.users");
-require("./model.tokens");
+//require("./model.tokens");
 require("./model.devices");
 require("./model.endpoints");
 require("./model.rooms");
 require("./model.adapter");
-require("./model.scenes");
-require("./model.plugins");
+//require("./model.scenes");
+//require("./model.plugins");
 //require("./model.credentials");
+//require("./model.logfiles");
 
 module.exports = mongoose.connection;

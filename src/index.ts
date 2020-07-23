@@ -1,10 +1,11 @@
 import * as fs from "fs";
 const pkg = require(`${__dirname}/package.json`);
-import Hooks = require("./system/hooks");
-import mongoose = require("mongoose");
+//import Hooks = require("./system/hooks");
+//import mongoose = require("mongoose");
+import uuid = require("uuid/v4");
 //import { EventEmitter } from "events";
 //@ts-ignore
-const hooks = new Hooks();
+//const hooks = new Hooks();
 //const events = new EventEmitter();
 
 
@@ -22,14 +23,16 @@ const hooks = new Hooks();
 // init message
 console.log("Starting OpenHaus...");
 
+// save pid file ?
+// handle pid files?
 
 // environment & settings 
 require("./environment");
-require("./global-settings");
+//require("./global-settings");
 
 
 // clear terminal
-if (process.env.CLEAR_SCREEN === "true") {
+if (process.env.CLEAR_SCREEN === "true" && process.env.NODE_ENV === "development") {
     require("clear")();
 }
 
@@ -43,63 +46,17 @@ if (process.env.LOG_COMPONENT) {
     logger.warn("Log target set to: '%s'", process.env.LOG_COMPONENT);
 }
 
-/*
-//TODO info not really helpful
-// err & origin empty
-//@ts-ignore
-process.on("uncaughtException", (err, origin) => {
-    if (process.env.CRASH_REPORT === "enabled") {
-        hooks.emit("crash_report", "uncaughtException", {
-            err,
-            origin
-        }, (event, data, next) => {
-
-            // call home
-            // TODO implement call home: CRASH_REPORT
-
-            next();
-
-        });
-    }
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-    if (process.env.CRASH_REPORT === "enabled") {
-        hooks.emit("crash_report", "unhandledRejection", {
-            reason,
-            promise
-        }, (event, data, next) => {
-
-            // call home
-            // TODO implement call home: CRASH_REPORT
-
-            next();
-
-        });
-    }
-});
-
-*/
-
-
-
-// secure start info
-(() => {
-    if (process.env.SECURE_START === "true") {
-        //@ts-ignore
-        logger.warn("!!! --- SECURE START IS ENABLED --- !!!");
-        //@ts-ignore
-        logger.warn("Perhaps some functions are limitated!");
-        console.log();
-    }
-})();
-
 
 if (!pkg.uuid) {
     try {
 
-        //@ts-ignore
-        logger.debug("Use generated UUID from startup");
+        if (!process.env.UUID) {
+            // generate UUIDv4
+            process.env.UUID = uuid();
+            //@ts-ignore
+            logger.debug("Use generated UUID from startup (%s)", process.env.UUID);
+        }
+
         //@ts-ignore
         logger.verbose("Save UUID to package.json");
 
@@ -122,82 +79,6 @@ if (!pkg.uuid) {
 }
 
 
-/*
-// TODO remove
-process.nextTick(() => {
-
-    // feedback
-    //@ts-ignore
-    logger.debug("Require database");
-    require("./database");
-
-    // load first all plugins
-    // so we dont miss a event/hook call
-    const C_PLUGINS = require("./components/plugins");
-
-    // NOTE: Plugins haben keine einfluss auf component init
-    // so warum erst plugins laden und nicht alle komponent gleich ?!
-    // plugins intercepten hooks. hooks werden nur durch API/Daten fluss getriggert device<>server(connector)
-
-    C_PLUGINS.events.on("ready", () => {
-
-        //@ts-ignore
-        logger.debug("Require components");
-
-        const COMPONENT_NAMES = [
-            "webserver",
-            "devices",
-            "endpoints",
-            "interfaces",
-            "adapters",
-            "commander"
-        ];
-
-        // counter var
-        let counter = COMPONENT_NAMES.length;
-
-
-        COMPONENT_NAMES.forEach((name) => {
-            try {
-
-                // require component
-                let component = require(`./components/${name}`);
-
-                // list for ready events
-                component.events.on("ready", () => {
-
-                    // feedback
-                    //@ts-ignore
-                    logger.verbose("component '%s' ready", name);
-
-                    // count down
-                    counter--;
-
-                    if (counter === 0) {
-                        // feedback
-                        //@ts-ignore
-                        logger.info("All %d components are ready to use!", COMPONENT_NAMES.length);
-                    }
-
-                });
-
-            } catch (err) {
-
-                //feedback
-                //@ts-ignore
-                logger.error(e, "Could not load component: %s", name);
-                process.exit(1000);
-
-            }
-        })
-
-    });
-
-});
-*/
-
-
-
 
 process.nextTick(() => {
 
@@ -215,73 +96,72 @@ process.nextTick(() => {
         "devices",
         "endpoints",
         "interfaces",
-        "adapters",
-        "commander",
-        "plugins",
-        "auth",
-        "users",
-        "scenes",
-        "smtp"
-    ];
+        "adapter",
+        //"plugins",
+        //"auth",
+        //"users", -> TODO!!!
+        //"scenes",
+        //"smtp"
+        //"ssdp"
+        //"mqqt"
+    ].sort(() => {
+
+        // "randomize" startup
+        return 0.5 - Math.random();
+
+    });
 
     // counter var
     let counter = COMPONENT_NAMES.length;
-    //const IGNORE = process.env.IGNORE_COMPONENTS.split(",");
-    //console.log(IGNORE)
+    //@ts-ignore
+    logger.debug("%d components to load...", COMPONENT_NAMES.length);
 
     COMPONENT_NAMES.forEach((name) => {
-        try {
+        //try {
 
+        //@ts-ignore
+        logger.debug("Load component: %s", name);
+
+        // require component
+        let component = require(`./components/${name}`);
+
+        // list for ready events
+        component.events.on("ready", () => {
+
+            // feedback
             //@ts-ignore
-            logger.debug("Load component: %s", name);
+            logger.verbose("component '%s' ready", name);
 
-            // require component
-            let component = require(`./components/${name}`);
+            // count down
+            counter--;
 
-            /*
-            if (IGNORE.includes(name)) {
-                //@ts-ignore
-                logger.warn("Ignore component '%s'", name);
-                counter--;
-                return;
-            }
-            */
-
-            // list for ready events
-            component.events.on("ready", () => {
+            if (counter === 0) {
 
                 // feedback
                 //@ts-ignore
-                logger.verbose("component '%s' ready", name);
+                logger.info("All %d components are ready to use!", COMPONENT_NAMES.length);
+                //events.emit("load_plugins");
 
-                // count down
-                counter--;
+            }
 
-                if (counter === 0) {
-                    // feedback
+        });
+        /*
+                } catch (err) {
+        
+                    //feedback
                     //@ts-ignore
-                    logger.info("All %d components are ready to use!", COMPONENT_NAMES.length);
-                    //events.emit("load_plugins");
-
+                    logger.error(err, "Could not load component: %s, Error: %s", name, err.message);
+                    process.exit(1000);
+        
                 }
-
-            });
-
-        } catch (err) {
-
-            //feedback
-            //@ts-ignore
-            logger.error(err, "Could not load component: %s, Error: %s", name, err.message);
-            process.exit(1000);
-
-        }
+                */
     })
 
 });
 
 
 
-
+/*
 hooks.on("crash_report", (event, data, next) => {
     fs.writeFile(`${process.cwd()}/crash_report`, JSON.stringify({
         event,
@@ -320,26 +200,57 @@ hooks.on("crash_report", (event, data, next) => {
 
     });
 });
-
-/*
-events.on("load_plugins", () => {
-
-    //@ts-ignore
-    logger.debug("Require component: plugins");
-
-    const C_PLUGINS = require("./components/plugins");
-
-    C_PLUGINS.events.on("ready", () => {
-        //@ts-ignore
-        logger.info("%s plugin(s) loaded", C_PLUGINS.PLUGINS.size);
-    });
-
-});
 */
 
 
+/*
 module.exports = {
     //    events,
     hooks,
     logger
 }
+*/
+
+/*
+const vm = require('vm');
+
+const x = 1;
+
+const context = {
+    process: Object.freeze(process),
+    console: console,
+    require: require,
+    moduel: module
+};
+vm.createContext(context); // Contextify the object.
+
+
+const code = 'console.log(require)';
+// `x` and `y` are global variables in the context.
+// Initially, x has the value 2 because that is the value of context.x.
+vm.runInContext(code, context);
+*/
+
+/*
+
+const p = new Proxy(process.env, {
+    get: function (target, name) {
+        console.log("acces %s in process.env", name);
+        //@ts-ignore
+        return target[name];
+    },
+    //@ts-ignore
+    set: function (target, prop, value) {
+        console.log("set %s in process.env to", prop, value);
+        //console.log(target, prop, value);
+        return true;
+    }
+});
+
+
+console.log(p["UUID"]);
+
+p.uuid = "aldsfkjadsf";
+
+console.log(p["UUID"]);
+*/

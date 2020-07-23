@@ -4,15 +4,25 @@ import Middleware = require("../middleware");
 /**
  * @constructor
  */
-function Hooks() {
+function Hooks(options) {
+
     this.middleware = new Map();
+
+    this.options = Object.assign({
+        prePost: false
+    }, options);
+
+    //@ts-ignore
+    //this.pre = new Hooks();
+    //@ts-ignore
+    //this.post = new Hooks();
 };
 
 
 /**
  * 
  */
-Hooks.prototype.emit = function (event: String, ...args: Array<any>) {
+Hooks.prototype.trigger = function (event: String, ...args: Array<any>) {
 
 
     if (!this.middleware.has(event)) {
@@ -24,6 +34,7 @@ Hooks.prototype.emit = function (event: String, ...args: Array<any>) {
     let middleware = this.middleware.get(event);
     //middleware.start.apply(middleware, args);
 
+    // NOTE change ...args to args ?!
     process.nextTick(middleware.start.bind(middleware), ...args);
 
 
@@ -56,7 +67,7 @@ Hooks.prototype.emit = function (event: String, ...args: Array<any>) {
 /**
  * 
  */
-Hooks.prototype.on = function (event: String, cb: Function) {
+Hooks.prototype.intercept = function (event: String, cb: Function) {
 
     if (!this.middleware.has(event)) {
         //@ts-ignore
@@ -67,6 +78,13 @@ Hooks.prototype.on = function (event: String, cb: Function) {
     middleware.use.call(middleware, cb);
 
 };
+
+
+
+// pre/post register intercept handler
+// trigger calls pre stack first
+// after pre stack call function
+// after function finish call post stack
 
 
 module.exports = Hooks;

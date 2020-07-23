@@ -104,7 +104,7 @@ schema.pre("save", function (next) {
 });
 
 
-
+// TODO check for more methods
 ["find", "findOne"].forEach((k) => {
     schema.pre(k, function () {
         //@ts-ignore

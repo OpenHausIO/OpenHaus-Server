@@ -28,7 +28,8 @@ module.exports = (log: winston.Logger) => {
             transform: (data, encoding, cb) => {
 
 
-                console.log(data.toString())
+                //console.log(data.toString())
+
                 log.verbose("Data type: %s", typeof data);
                 data = String(data);
 

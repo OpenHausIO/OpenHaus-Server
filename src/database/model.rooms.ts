@@ -19,16 +19,19 @@ const schema = new mongoose.Schema({
     },
     icon: {
         type: String,
-        required: true
+        default: "fas fa-door-open"
     },
     floor: {
-        type: Number,
-        required: true
+        type: Number
     },
     number: {
         type: Number,
         //required: true
-    },
+    },/*
+    occupied: {
+        type: Boolean,
+        default: false
+    },*/
     enabled: {
         type: Boolean,
         default: true

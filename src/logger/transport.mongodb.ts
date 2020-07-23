@@ -1,6 +1,8 @@
-import Transport = require('winston-transport');
-//import util = require('util');
+import Transport = require("winston-transport");
+import mongoose = require("mongoose");
 
+// logfiles
+const model = mongoose.model("Logfiles");
 
 // https://github.com/winstonjs/winston-transport
 
@@ -11,24 +13,28 @@ import Transport = require('winston-transport');
 // of the base functionality and `.exceptions.handle()`.
 //
 module.exports = class MongoDB extends Transport {
+
     constructor(opts) {
         super(opts);
-
-        //
-        // Consume any custom options here. e.g.:
-        // - Connection information for databases
-        // - Authentication information for APIs (e.g. loggly, papertrail,
-        //   logentries, etc.).
-        //
     }
 
-    log(info, callback) {
-        setImmediate(() => {
-            this.emit('logged', info);
+    log(info, cb) {
+        new model({
+            //@ts-ignore
+            label: info.label,
+            level: info.level,
+            message: info.message,
+            timestamp: info.timestamp,
+        }).save((err, doc) => {
+
+            if (err) {
+                return cb(err)
+            }
+
+            this.emit("logged", info);
+            cb(null, doc);
+
         });
-
-        // Perform the writing to the remote service
-
-        callback();
     }
+
 };

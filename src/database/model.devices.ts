@@ -56,14 +56,17 @@ const ENUM_SETTINGS_TYPE = {
         xany: Joi.boolean().default(false)
     }),
     "ETHERNET": Joi.object({
-        host: Joi.string().required(), // device IP if mode = client, 0.0.0.0 when mode = server, *unless you know what your are doing*!!!
-        port: Joi.number().required(), // -> remove -> transport
-        transport: {
+        host: Joi.string().required(),
+        port: Joi.number().required(),
+        mac: Joi.string().regex(REGEX_MAC_ADRESS),
+        /*transport: {
             protocol: Joi.string().required().valid(["tcp", "udp"]),
             port: Joi.number().required(), // -> add transport settings
             mode: Joi.string().valid(["client", "server"]).default("client"),
             broadcast: Joi.boolean().default(false)
-        },
+        },*/
+        // remove everything below this line
+        // these are handled by plugins
         path: Joi.string().default("/"), // remove ?! plugin handle REST apis -> todo
         protocol: Joi.string().required().valid([
             "ws", "wss",
@@ -71,8 +74,7 @@ const ENUM_SETTINGS_TYPE = {
             "tcp", // rtsp ?!
             "udp" // ssdp ?!
         ]),
-        mode: Joi.string().valid(["client", "server"]).default("client"), // -> remove -> transport
-        mac: Joi.string().regex(REGEX_MAC_ADRESS)
+        mode: Joi.string().valid(["client", "server"]).default("client"), // -> remove -> transport        
     })
 };
 
@@ -95,6 +97,8 @@ const interfaceSchema = new mongoose.Schema({
         // created for adapter -> refactor ?
         // use adapter "raw" -> plain tcp/udp/ws from connector
     },
+    // add property object for 
+    // mac / IR type: philips,nec / toslink, PCM ?!
     settings: {
         type: Object,
         required: true,
@@ -137,10 +141,13 @@ const schema = new mongoose.Schema({
         type: String,
         required: true
     },
+    identifier: {
+        type: mongoose.Schema.Types.Mixed
+    },
     icon: {
         //NOTE needed?!
         type: String,
-        required: true
+        default: "far fa-question-circle"
     },
     room: {
         type: ObjectId,

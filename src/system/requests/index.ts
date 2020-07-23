@@ -1,11 +1,10 @@
-import url = require("url");
-import system = require("../../index");
-
+const url = require("url");
+import system = require("../../");
 //@ts-ignore
-const log = system.logger; //.create("system/request");
+const log = system.logger.create("system/requests");
 
 
-function redirect() {
+function redirect(res) {
 
 }
 
@@ -20,27 +19,24 @@ function request(uri, options, cb) {
         options = {};
     }
 
-    // default options
+    // merge default & user options
     options = Object.assign({
-        data: "",
-        method: "GET"
+        method: "GET",
+        data: ""
     }, options);
 
 
-
     //feedback
-    log.verbose("[%s] %s", options.method, uri);
+    log.debug("[%s] %s", options.method, uri);
 
-
+    // promsie wrapper
     let prom = new Promise((resolve, reject) => {
 
         let parts = new url.URL(uri);
         let protocol = parts.protocol.slice(0, -1);
 
-
-        options.host = parts.host;
-        options.port = parts.port;
-        options.path = parts.pathname;
+        // set options parsed from uri
+        // NOTE needed ?!
         options.protocol = parts.protocol;
         options.username = parts.username;
         options.password = parts.password;
@@ -51,50 +47,55 @@ function request(uri, options, cb) {
             return;
         }
 
-        //        console.log(options)
-
         // require http/https lib
-        let lib = require(protocol);
-
-        let req = lib.request(options, (res) => {
+        let req = require(protocol).request(uri, options, (res) => {
 
             //TODO immplement redirect
+            const chunks = [];
 
-            let body = "";
-
-            res.on("data", (chunk) => {
-                body += chunk;
+            res.on("data", function (chunk) {
+                chunks.push(chunk);
             });
+
 
             res.once("end", () => {
+
+                // concat body chunks
+                let body = Buffer.concat(chunks);
+
                 resolve({
-                    info: {
+                    request: {
+                        data: options.data,
+                        headers: options.headers || {}
+                    },
+                    response: {
                         status: res.statusCode,
                         headers: res.headers,
-                        data: options.data
                     },
-                    body
-                })
+                    body: body.toString()
+                });
+
             });
+
 
         });
 
-        req.once("error", (err) => {
+        req.on("error", (err) => {
             reject(err);
-        })
+        });
 
-        //req.write(options.data);
         req.end(options.data);
 
     });
+
 
 
     if (!cb) {
         return prom;
     }
 
-    prom.then(({ info, body }) => {
-        cb(null, info, body);
+    prom.then((data) => {
+        cb(null, data);
     }).catch(cb);
 
 }
